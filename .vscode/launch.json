@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": ["30"],
             "cwd": "${workspaceFolder}"
         },
         {

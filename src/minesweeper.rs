@@ -11,6 +11,13 @@ pub enum OpenResult {
     NoMine(u8)
 }
 
+#[derive(Debug,PartialEq,Eq)]
+pub enum GameState {
+    InProgress,
+    Win,
+    Loss
+}
+
 #[derive(Debug)]
 pub struct Minesweeper {
     width: usize,
@@ -18,7 +25,7 @@ pub struct Minesweeper {
     opened: HashSet<Position>,
     flagged: HashSet<Position>,
     mines: HashSet<Position>,
-    lost: bool
+    pub game_state: GameState
 }
 
 impl Minesweeper {
@@ -39,7 +46,7 @@ impl Minesweeper {
 
                 mines
             },
-            lost: false
+            game_state: GameState::InProgress
         }
     }
 
@@ -94,7 +101,7 @@ impl Minesweeper {
 
     pub fn open(&mut self, pos: Position) -> Option<OpenResult> {
         // Skip the position if the field is flagged
-        if self.is_flagged(pos) || self.is_open(pos) || self.lost{ return None }
+        if self.is_flagged(pos) || self.is_open(pos) || self.game_state == GameState::Loss { return None }
         
         // Open the field
         self.opened.insert(pos);
@@ -111,7 +118,7 @@ impl Minesweeper {
         }
 
         if self.is_mined(pos) {
-            self.lost = true;
+            self.game_state = GameState::Loss;
             return Some(OpenResult::Mine);
         } else {
             return Some(OpenResult::NoMine(0));
@@ -120,7 +127,7 @@ impl Minesweeper {
 
     pub fn flag(&mut self, pos: Position) {
         // Skip this position if the field is opened
-        if self.is_open(pos) || self.lost { return; }
+        if self.is_open(pos) || self.game_state == GameState::Loss { return; }
 
         if self.is_flagged(pos) {
             self.flagged.remove(&pos);
@@ -163,8 +170,10 @@ impl Display for Minesweeper {
         }
         
         // Inform the user if they have lost
-        if self.lost {
-            f.write_str("You lost!")?;
+        if self.game_state == GameState::Loss {
+            f.write_str("You lost!\n")?;
+        } else if self.game_state == GameState::Win {
+            f.write_str("You won!\n")?;
         }
 
         Ok(())

@@ -57,7 +57,10 @@ fn main() {
                 let cmd = *val;
 
                 if cmd == "help" {
-                    // TODO
+                    println!("Commands:");
+                    println!("All coordinates are measured from the top left of the grid");
+                    println!("- o <x> <y>: Opens the field with the given coordinates.");
+                    println!("- f <x> <y>: Flags the field with the given coordinates");
                 } else {
                     println!("Unknown command '{cmd}'");
                     println!("Type 'help' for more information");

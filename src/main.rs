@@ -27,11 +27,11 @@ fn main() {
     while ms.game_state == GameState::InProgress {
         print!("{ms}");
         print!("> ");
-        io::stdout().flush();
+        io::stdout().flush().ok();
 
         // Read input
         let mut buf: String = String::from("");
-        io::stdin().read_line(&mut buf);
+        io::stdin().read_line(&mut buf).ok();
 
         let raw_input = buf.as_str().replace("\n", "");
         let input: Vec<&str> = raw_input.split(" ").collect();

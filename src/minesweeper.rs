@@ -1,6 +1,6 @@
 use std::{
     collections::HashSet,
-    fmt::{Display, Write, write}
+    fmt::{Display, Write}
 };
 use rand::prelude::*;
 

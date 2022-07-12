@@ -1,6 +1,6 @@
 use std::{
     collections::HashSet,
-    fmt::{Display, Write}
+    fmt::{Display, Write, write}
 };
 use rand::prelude::*;
 
@@ -145,7 +145,12 @@ impl Display for Minesweeper {
         let remaining_mines = self.mines.len() - self.flagged.len();
         write!(f, "Remaining Mines: {}\n", remaining_mines)?;
 
-        for y in 0..self.width {
+        // Print board
+        for y in (0..self.width).rev() {
+            // Print row heading
+            write!(f, "|{}|", y)?;
+
+            // Print each column for the given row
             for x in 0..self.height {
                 let pos = (x, y);
 
@@ -154,7 +159,7 @@ impl Display for Minesweeper {
                         f.write_str("💣 ")?;
                     } else {
                         let neighboring_mines = self.neighboring_mines(pos);
-                        if (neighboring_mines > 0) {
+                        if neighboring_mines > 0 {
                             write!(f, " {} ", neighboring_mines)?;
                         } else {
                             f.write_str("   ")?;
@@ -168,6 +173,13 @@ impl Display for Minesweeper {
             }
             f.write_char('\n')?;
         }
+
+        // Print column headings
+        write!(f, "| |")?;
+        for x in 0..self.width {
+            write!(f, "|{}|", x)?;
+        }
+        write!(f, "\n")?;
         
         // Inform the user if they have lost
         if self.game_state == GameState::Loss {

@@ -153,23 +153,34 @@ impl Display for Minesweeper {
             // Print each column for the given row
             for x in 0..self.height {
                 let pos = (x, y);
-
-                if self.is_open(pos) {
-                    if self.is_mined(pos) {
+                
+                // Display the mine in the current space if the game is lost or the mine is revealed
+                if self.is_mined(pos) {
+                    if self.is_open(pos) || self.game_state == GameState::Loss {
                         f.write_str("💣 ")?;
-                    } else {
-                        let neighboring_mines = self.neighboring_mines(pos);
-                        if neighboring_mines > 0 {
-                            write!(f, " {} ", neighboring_mines)?;
-                        } else {
-                            f.write_str("   ")?;
-                        }
+                        continue;
                     }
-                } else if self.is_flagged(pos) {
-                    f.write_str("🚩 ")?;
-                } else {
-                    f.write_str("⬜ ")?;
                 }
+
+                // If the tile is open, display the number of neighboring mines
+                if self.is_open(pos) {
+                    let neighboring_mines = self.neighboring_mines(pos);
+                    if neighboring_mines > 0 {
+                        write!(f, " {} ", neighboring_mines)?;
+                    } else {
+                        f.write_str("   ")?;
+                    }
+                    continue;
+                }
+                
+                // If the field is flagged, display a flag
+                if self.is_flagged(pos) {
+                    f.write_str("🚩 ")?;
+                    continue;
+                }
+
+                // Otherwise display an empty field
+                f.write_str("⬜ ")?;
             }
             f.write_char('\n')?;
         }

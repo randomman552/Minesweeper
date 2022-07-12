@@ -2,7 +2,8 @@ mod minesweeper;
 
 use std::{
     io::{self, Write},
-    string::String
+    string::String,
+    process::exit
 };
 
 use minesweeper::*;
@@ -61,6 +62,9 @@ fn main() {
                     println!("All coordinates are measured from the top left of the grid");
                     println!("- o <x> <y>: Opens the field with the given coordinates.");
                     println!("- f <x> <y>: Flags the field with the given coordinates");
+                } else if cmd == "exit" {
+                    println!("Exiting...");
+                    exit(0);
                 } else {
                     println!("Unknown command '{cmd}'");
                     println!("Type 'help' for more information");

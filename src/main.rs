@@ -41,8 +41,16 @@ fn main() {
             // Statement to catch 3 argument input
             [Some(val0), Some(val1), Some(val2)] => {
                 let cmd = *val0;
-                let x = val1.parse::<usize>().unwrap();
-                let y = val2.parse::<usize>().unwrap();
+                
+                // Ignore the command if an invalid position is given
+                let x = match val1.parse::<usize>() {
+                    Ok(val) => val,
+                    Err(_) => continue
+                };
+                let y = match val2.parse::<usize>() {
+                    Ok(val) => val,
+                    Err(_) => continue
+                };
 
                 let pos = (x, y);
 

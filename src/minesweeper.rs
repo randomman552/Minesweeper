@@ -64,6 +64,10 @@ impl Minesweeper {
         self.flagged.contains(&pos)
     }
 
+    pub fn is_in_bounds(&self, pos: Position) -> bool {
+        pos.0 < self.width && pos.1 < self.height
+    }
+
     // endregion
 
 
@@ -102,6 +106,8 @@ impl Minesweeper {
     pub fn open(&mut self, pos: Position) -> Option<OpenResult> {
         // Skip the position if the field is flagged
         if self.is_flagged(pos) || self.is_open(pos) || self.game_state == GameState::Loss { return None }
+        // Skip the position if the field is out of bounds
+        if !self.is_in_bounds(pos) { return None }
         
         // Open the field
         self.opened.insert(pos);
@@ -126,8 +132,10 @@ impl Minesweeper {
     }
 
     pub fn flag(&mut self, pos: Position) {
-        // Skip this position if the field is opened
+        // Skip the position if the field is opened
         if self.is_open(pos) || self.game_state == GameState::Loss { return; }
+        // Skip the position if the field is out of bounds
+        if !self.is_in_bounds(pos) { return; }
 
         if self.is_flagged(pos) {
             self.flagged.remove(&pos);
@@ -226,5 +234,11 @@ mod tests {
         ms.flag((5, 5));
 
         println!("{}", ms);
+    }
+
+    #[test]
+    fn bounds_test() {
+        let ms = Minesweeper::new(10, 10, 10);
+        assert!(ms.is_in_bounds((5, 5)) == true);
     }
 }

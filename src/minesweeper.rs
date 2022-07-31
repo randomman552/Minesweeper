@@ -71,6 +71,27 @@ impl Minesweeper {
     // endregion
 
 
+    // region Win/loss condition checks
+
+    fn check_game_state(&mut self) -> GameState {
+        // Check for opened mines
+        if self.mines.intersection(&self.opened).count() > 0 {
+            self.game_state = GameState::Loss;
+            return GameState::Loss;
+        }
+
+        // Check for all mines flagged
+        if self.mines.intersection(&self.flagged).count() == self.mines.len() {
+            self.game_state = GameState::Win;
+            return GameState::Win;
+        }
+
+        return GameState::InProgress;
+    }
+
+    // endregion
+
+    
     // region Neighboring fields methods
 
     pub fn neighboring_fields_iter(&self, (x, y): Position) -> impl Iterator<Item = Position> {
@@ -127,6 +148,7 @@ impl Minesweeper {
             self.game_state = GameState::Loss;
             return Some(OpenResult::Mine);
         } else {
+            self.check_game_state();
             return Some(OpenResult::NoMine(0));
         }
     }
@@ -141,6 +163,7 @@ impl Minesweeper {
             self.flagged.remove(&pos);
         } else {
             self.flagged.insert(pos);
+            self.check_game_state();
         }
     }
 

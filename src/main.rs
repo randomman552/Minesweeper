@@ -1,89 +1,56 @@
 mod minesweeper;
 
-use std::{
-    io::{self, Write},
-    string::String,
-    process::exit
-};
-
+use iced::widget::{button, column, text, Column};
 use minesweeper::*;
-use clap::Parser;
 
-#[derive(Parser,Default)]
-#[clap(author = "George Grainger <george@ggrainger.uk>", version, about="Simple cli minesweeper")]
-struct Arguments {
-    mines: usize,
-    #[clap(default_value="10")]
-    width: usize,
-    #[clap(default_value="10")]
-    height: usize
+#[derive(Debug, Clone, Copy)]
+pub enum Message {
+    Increment,
+    Decrement,
 }
 
-fn main() {
-    let args = Arguments::parse();
+struct UserInterface {
+    value: i32,
+    game: Minesweeper,
+}
 
-    let mut ms = Minesweeper::new(args.width, args.height, args.mines);
-    
-    while ms.game_state == GameState::InProgress {
-        print!("{ms}");
-        print!("> ");
-        io::stdout().flush().ok();
-
-        // Read input
-        let mut buf: String = String::from("");
-        io::stdin().read_line(&mut buf).ok();
-
-        let raw_input = buf.as_str().replace("\n", "");
-        let input: Vec<&str> = raw_input.split(" ").collect();
-
-        // This seems messy to me, is there a better way of doing this?
-        match [input.get(0), input.get(1), input.get(2)] {
-            // Statement to catch 3 argument input
-            [Some(val0), Some(val1), Some(val2)] => {
-                let cmd = *val0;
-                
-                // Ignore the command if an invalid position is given
-                let x = match val1.parse::<usize>() {
-                    Ok(val) => val,
-                    Err(_) => continue
-                };
-                let y = match val2.parse::<usize>() {
-                    Ok(val) => val,
-                    Err(_) => continue
-                };
-
-                let pos = (x, y);
-
-                if cmd == "f" || cmd == "flag" {
-                    ms.flag(pos);
-                } else if cmd == "o" || cmd == "open" {
-                    ms.open(pos);
-                }
-            }
-
-            // Statement to catch single argument input
-            [Some(val), _, _] => {
-                let cmd = *val;
-
-                if cmd == "help" {
-                    println!("Commands:");
-                    println!("All coordinates are measured from the top left of the grid");
-                    println!("- o <x> <y>: Opens the field with the given coordinates.");
-                    println!("- f <x> <y>: Flags the field with the given coordinates");
-                } else if cmd == "exit" {
-                    println!("Exiting...");
-                    exit(0);
-                } else {
-                    println!("Unknown command '{cmd}'");
-                    println!("Type 'help' for more information");
-                }
-            }
-
-            // Wildcard
-            _ => {}
+impl Default for UserInterface {
+    fn default() -> Self {
+        Self {
+            value: 0,
+            game: Minesweeper::new(10, 10, 10),
         }
     }
+}
 
-    // Show final state
-    print!("{ms}");
+impl UserInterface {
+    fn view(&self) -> Column<Message> {
+        // We use a column: a simple vertical layout
+        column![
+            // The increment button. We tell it to produce an
+            // `Increment` message when pressed
+            button("+").on_press(Message::Increment),
+            // We show the value of the counter here
+            text(self.value).size(50),
+            // The decrement button. We tell it to produce a
+            // `Decrement` message when pressed
+            button("-").on_press(Message::Decrement),
+        ]
+        .into()
+    }
+
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::Increment => {
+                self.value += 1;
+            }
+            Message::Decrement => {
+                self.value -= 1;
+            }
+        }
+    }
+}
+
+fn main() -> iced::Result {
+    iced::run("Minesweeper", UserInterface::update, UserInterface::view)
 }

@@ -1,21 +1,21 @@
+use rand::prelude::*;
 use std::{
     collections::HashSet,
-    fmt::{Display, Write}
+    fmt::{Display, Write},
 };
-use rand::prelude::*;
 
 pub type Position = (usize, usize);
 
 pub enum OpenResult {
     Mine,
-    NoMine(u8)
+    NoMine(u8),
 }
 
-#[derive(Debug,PartialEq,Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
     InProgress,
     Win,
-    Loss
+    Loss,
 }
 
 #[derive(Debug)]
@@ -25,28 +25,28 @@ pub struct Minesweeper {
     opened: HashSet<Position>,
     flagged: HashSet<Position>,
     mines: HashSet<Position>,
-    pub game_state: GameState
+    pub game_state: GameState,
 }
 
 impl Minesweeper {
     pub fn new(width: usize, height: usize, num_mines: usize) -> Minesweeper {
-        Minesweeper{
+        Minesweeper {
             width,
             height,
             opened: HashSet::new(),
             flagged: HashSet::new(),
             mines: {
                 let mut mines = HashSet::new();
-                let mut rng = rand::thread_rng();
-                
+                let mut rng = rand::rng();
+
                 while mines.len() < num_mines {
-                    let pos = (rng.gen_range(0..width), rng.gen_range(0..height));
+                    let pos = (rng.random_range(0..width), rng.random_range(0..height));
                     mines.insert(pos);
                 }
 
                 mines
             },
-            game_state: GameState::InProgress
+            game_state: GameState::InProgress,
         }
     }
 
@@ -70,7 +70,6 @@ impl Minesweeper {
 
     // endregion
 
-
     // region Win/loss condition checks
 
     fn check_game_state(&mut self) -> GameState {
@@ -91,45 +90,43 @@ impl Minesweeper {
 
     // endregion
 
-    
     // region Neighboring fields methods
 
     pub fn neighboring_fields_iter(&self, (x, y): Position) -> impl Iterator<Item = Position> {
         let height = self.height;
         let width = self.width;
-        
+
         (x.max(1) - 1..=(x + 1).min(width - 1))
-            .flat_map(move |i| {
-                (y.max(1) - 1..=(y + 1).min(height - 1)).map(move |j| (i, j))
-            })
+            .flat_map(move |i| (y.max(1) - 1..=(y + 1).min(height - 1)).map(move |j| (i, j)))
             .filter(move |&pos| pos != (x, y))
     }
 
     pub fn neighboring_mines(&self, pos: Position) -> u8 {
-        self
-            .neighboring_fields_iter(pos)
+        self.neighboring_fields_iter(pos)
             .filter(|pos| self.mines.contains(pos))
             .count() as u8
     }
 
     pub fn neighboring_flags(&self, pos: Position) -> u8 {
-        self
-            .neighboring_fields_iter(pos)
+        self.neighboring_fields_iter(pos)
             .filter(|pos| self.flagged.contains(pos))
             .count() as u8
     }
 
     // endregion
 
-
     // region Player interaction methods
 
     pub fn open(&mut self, pos: Position) -> Option<OpenResult> {
         // Skip the position if the field is flagged
-        if self.is_flagged(pos) || self.is_open(pos) || self.game_state == GameState::Loss { return None }
+        if self.is_flagged(pos) || self.is_open(pos) || self.game_state == GameState::Loss {
+            return None;
+        }
         // Skip the position if the field is out of bounds
-        if !self.is_in_bounds(pos) { return None }
-        
+        if !self.is_in_bounds(pos) {
+            return None;
+        }
+
         // Open the field
         self.opened.insert(pos);
 
@@ -155,9 +152,13 @@ impl Minesweeper {
 
     pub fn flag(&mut self, pos: Position) {
         // Skip the position if the field is opened
-        if self.is_open(pos) || self.game_state == GameState::Loss { return; }
+        if self.is_open(pos) || self.game_state == GameState::Loss {
+            return;
+        }
         // Skip the position if the field is out of bounds
-        if !self.is_in_bounds(pos) { return; }
+        if !self.is_in_bounds(pos) {
+            return;
+        }
 
         if self.is_flagged(pos) {
             self.flagged.remove(&pos);
@@ -184,7 +185,7 @@ impl Display for Minesweeper {
             // Print each column for the given row
             for x in 0..self.height {
                 let pos = (x, y);
-                
+
                 // Display the mine in the current space if the game is lost or the mine is revealed
                 if self.is_mined(pos) {
                     if self.is_open(pos) || self.game_state == GameState::Loss {
@@ -203,7 +204,7 @@ impl Display for Minesweeper {
                     }
                     continue;
                 }
-                
+
                 // If the field is flagged, display a flag
                 if self.is_flagged(pos) {
                     f.write_str("🚩 ")?;
@@ -222,7 +223,7 @@ impl Display for Minesweeper {
             write!(f, "|{}|", x)?;
         }
         write!(f, "\n")?;
-        
+
         // Inform the user if they have lost
         if self.game_state == GameState::Loss {
             f.write_str("You lost!\n")?;
@@ -252,7 +253,7 @@ mod tests {
     #[test]
     fn play_test() {
         let mut ms = Minesweeper::new(10, 10, 10);
-        
+
         ms.open((4, 4));
         ms.flag((5, 5));
 

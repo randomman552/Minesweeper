@@ -3,7 +3,7 @@ mod minesweeper;
 use std::usize;
 
 use iced::{
-    widget::{button, column, row, text, Button, Column, Row, Text},
+    widget::{container, Column, Container, MouseArea, Row, Text},
     Element,
 };
 use minesweeper::*;
@@ -15,14 +15,12 @@ pub enum Message {
 }
 
 struct UserInterface {
-    value: i32,
     game: Minesweeper,
 }
 
 impl Default for UserInterface {
     fn default() -> Self {
         Self {
-            value: 0,
             game: Minesweeper::new(10, 10, 10),
         }
     }
@@ -35,16 +33,8 @@ impl UserInterface {
         for y in 0..self.game.height {
             let mut row = Row::new().spacing(5);
             for x in 0..self.game.width {
-                let mine_count = self.get_cell_text(x, y);
-
-                // Push a new button for each cell in the grid
-                row = row.push(
-                    Button::new(Text::new(mine_count).center())
-                        .padding(10)
-                        .width(50)
-                        .height(50)
-                        .on_press(Message::Open((x, y))),
-                );
+                // Create a cell for each game grid cell
+                row = row.push(self.get_cell(x, y));
             }
             grid = grid.push(row);
         }
@@ -52,17 +42,39 @@ impl UserInterface {
         return grid.into();
     }
 
+    fn get_cell(&self, x: usize, y: usize) -> Element<Message> {
+        let mine_count = self.get_cell_text(x, y);
+
+        MouseArea::new(
+            Container::new(Text::new(mine_count).center())
+                .width(50)
+                .height(50)
+                .padding(10)
+                .style(container::bordered_box)
+                .center(50),
+        )
+        .on_press(Message::Open((x, y)))
+        .on_right_press(Message::Flag((x, y)))
+        .into()
+    }
+
     fn get_cell_text(&self, x: usize, y: usize) -> String {
-        let mut mine_count = String::from("#");
-        if self.game.is_open((x, y)) {
+        let mut text = String::from("#");
+
+        // Show flagged
+        if self.game.is_flagged((x, y)) {
+            text = String::from("F");
+        }
+        // Show the mine count or a mine if the field is open
+        else if self.game.is_open((x, y)) {
             if self.game.is_mined((x, y)) {
-                mine_count = String::from("*");
+                text = String::from("*");
             } else {
-                mine_count = self.game.neighboring_mines((x, y)).to_string();
+                text = self.game.neighboring_mines((x, y)).to_string();
             }
         }
 
-        return mine_count;
+        return text;
     }
 
     fn update(&mut self, message: Message) {

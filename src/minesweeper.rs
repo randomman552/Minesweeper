@@ -130,6 +130,12 @@ impl Minesweeper {
         // Open the field
         self.opened.insert(pos);
 
+        // Don't open neighboring fields if this one is mined
+        if self.is_mined(pos) {
+            self.game_state = GameState::Loss;
+            return Some(OpenResult::Mine);
+        }
+
         // Open the neighboring fields if safe to do so
         let mine_count = self.neighboring_mines(pos);
         let flag_count = self.neighboring_flags(pos);
@@ -141,13 +147,8 @@ impl Minesweeper {
             }
         }
 
-        if self.is_mined(pos) {
-            self.game_state = GameState::Loss;
-            return Some(OpenResult::Mine);
-        } else {
-            self.check_game_state();
-            return Some(OpenResult::NoMine(0));
-        }
+        self.check_game_state();
+        return Some(OpenResult::NoMine(0));
     }
 
     pub fn flag(&mut self, pos: Position) {

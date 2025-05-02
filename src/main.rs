@@ -1,12 +1,17 @@
 mod minesweeper;
 
-use iced::widget::{button, column, text, Column};
+use std::usize;
+
+use iced::{
+    widget::{button, column, row, text, Button, Column, Row, Text},
+    Element,
+};
 use minesweeper::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
-    Increment,
-    Decrement,
+    Open(Position),
+    Flag(Position),
 }
 
 struct UserInterface {
@@ -24,29 +29,48 @@ impl Default for UserInterface {
 }
 
 impl UserInterface {
-    fn view(&self) -> Column<Message> {
-        // We use a column: a simple vertical layout
-        column![
-            // The increment button. We tell it to produce an
-            // `Increment` message when pressed
-            button("+").on_press(Message::Increment),
-            // We show the value of the counter here
-            text(self.value).size(50),
-            // The decrement button. We tell it to produce a
-            // `Decrement` message when pressed
-            button("-").on_press(Message::Decrement),
-        ]
-        .into()
+    fn view(&self) -> Element<Message> {
+        // Build each row
+        let mut grid = Column::new().spacing(5);
+        for y in 0..self.game.height {
+            let mut row = Row::new().spacing(5);
+            for x in 0..self.game.width {
+                let mine_count = self.get_cell_text(x, y);
+
+                // Push a new button for each cell in the grid
+                row = row.push(
+                    Button::new(Text::new(mine_count).center())
+                        .padding(10)
+                        .width(50)
+                        .height(50)
+                        .on_press(Message::Open((x, y))),
+                );
+            }
+            grid = grid.push(row);
+        }
+
+        return grid.into();
+    }
+
+    fn get_cell_text(&self, x: usize, y: usize) -> String {
+        let mut mine_count = String::from("#");
+        if self.game.is_open((x, y)) {
+            if self.game.is_mined((x, y)) {
+                mine_count = String::from("*");
+            } else {
+                mine_count = self.game.neighboring_mines((x, y)).to_string();
+            }
+        }
+
+        return mine_count;
     }
 
     fn update(&mut self, message: Message) {
-        match message {
-            Message::Increment => {
-                self.value += 1;
-            }
-            Message::Decrement => {
-                self.value -= 1;
-            }
+        if let Message::Open(pos) = message {
+            self.game.open(pos);
+        }
+        if let Message::Flag(pos) = message {
+            self.game.flag(pos);
         }
     }
 }

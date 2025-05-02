@@ -20,12 +20,12 @@ pub enum GameState {
 
 #[derive(Debug)]
 pub struct Minesweeper {
-    width: usize,
-    height: usize,
+    pub width: usize,
+    pub height: usize,
+    pub game_state: GameState,
     opened: HashSet<Position>,
     flagged: HashSet<Position>,
     mines: HashSet<Position>,
-    pub game_state: GameState,
 }
 
 impl Minesweeper {

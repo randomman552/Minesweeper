@@ -133,8 +133,10 @@ impl Minesweeper {
             return GameState::Loss;
         }
 
-        // Check for all mines flagged
-        if self.mines.intersection(&self.flagged).count() == self.mines.len() {
+        // Check for all mines flagged and all fields opened or flagged
+        if self.mines.intersection(&self.flagged).count() == self.mines.len()
+            && self.opened.union(&self.flagged).count() == self.width * self.height
+        {
             self.game_state = GameState::Win;
             return GameState::Win;
         }

@@ -174,7 +174,7 @@ impl MinesweeperInterface {
             + (Self::EDGE_PADDING * 2)
             + (Self::BORDER_PADDING * 2);
 
-        let height = (self.game.height * Self::FIELD_SIZE)
+        let height = ((self.game.height + 1) * Self::FIELD_SIZE)
             + (Self::EDGE_PADDING * 4)
             + (Self::BORDER_PADDING * 3);
 

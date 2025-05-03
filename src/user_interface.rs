@@ -76,11 +76,10 @@ impl MinesweeperInterface {
     }
 
     fn get_cell(&self, x: usize, y: usize) -> Element<Message> {
-        let mine_count = self.get_cell_text(x, y);
         let pos = (x, y);
 
         MouseArea::new(
-            Container::new(Text::new(mine_count).center())
+            Container::new(self.get_cell_content(x, y))
                 .width(50)
                 .height(50)
                 .padding(10)
@@ -95,7 +94,7 @@ impl MinesweeperInterface {
         .into()
     }
 
-    fn get_cell_text(&self, x: usize, y: usize) -> String {
+    fn get_cell_content(&self, x: usize, y: usize) -> Element<Message> {
         let mut text = String::from("#");
 
         // Show flagged
@@ -111,6 +110,6 @@ impl MinesweeperInterface {
             }
         }
 
-        return text;
+        return Text::new(text).center().into();
     }
 }

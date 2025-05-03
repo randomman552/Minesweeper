@@ -5,8 +5,8 @@ use crate::minesweeper::*;
 use assets::MinesweeperAssets;
 use iced::{
     alignment, mouse,
-    widget::{image, Column, Container, MouseArea, Row},
-    Element,
+    widget::{image, Column, Container, Image, MouseArea, Row},
+    Alignment, Element, Length,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -54,15 +54,15 @@ impl MinesweeperInterface {
 
         // Render the controls row
         let mut controls_row = Row::new();
-        let face = self.render_face();
-        controls_row = controls_row.push(face);
+        controls_row = controls_row.push(self.render_remaining_mines());
+        controls_row = controls_row.push(self.render_face());
 
         // Layout in a column
         let mut column = Column::new();
         column = column.push(controls_row);
         column = column.push(board);
 
-        return column.align_x(alignment::Horizontal::Center).into();
+        return column.align_x(Alignment::Center).into();
     }
 
     pub fn update(&mut self, message: Message) {
@@ -111,6 +111,44 @@ impl MinesweeperInterface {
         String::from("Minesweeper")
     }
 
+    fn render_remaining_mines(&self) -> Element<Message> {
+        let mine_count = self.game.remaining_mines();
+        let mut mine_count_string = mine_count.to_string();
+
+        // Pad to the left if necessary
+        if mine_count < 100 {
+            mine_count_string = String::from("0") + &mine_count_string;
+        }
+        if mine_count < 10 {
+            mine_count_string = String::from("0") + &mine_count_string;
+        }
+
+        let mut row = Row::new();
+        for (_, c) in mine_count_string.chars().enumerate() {
+            let image: Image = match c {
+                '0' => image(&self.assets.score0),
+                '1' => image(&self.assets.score1),
+                '2' => image(&self.assets.score2),
+                '3' => image(&self.assets.score3),
+                '4' => image(&self.assets.score4),
+                '5' => image(&self.assets.score5),
+                '6' => image(&self.assets.score6),
+                '7' => image(&self.assets.score7),
+                '8' => image(&self.assets.score8),
+                '9' => image(&self.assets.score9),
+                '-' => image(&self.assets.score_dash),
+                _ => image(&self.assets.score_empty),
+            };
+            row = row.push(Container::new(image.height(64).width(32)))
+        }
+
+        return Column::new()
+            .push(row)
+            .align_x(Alignment::Start)
+            .width(Length::FillPortion(1))
+            .into();
+    }
+
     fn render_face(&self) -> Element<Message> {
         const FACE_SIZE: u16 = 64;
 
@@ -124,21 +162,26 @@ impl MinesweeperInterface {
         // Override image if currently pressed down
         if self.face_pressed {
             face_image = image(&self.assets.face_pressed);
-        } else if (self.open_pressed) {
+        } else if self.open_pressed {
             face_image = image(&self.assets.face_open);
         }
 
         // Create mouse area with interaction logic
-        return MouseArea::new(
-            Container::new(face_image.width(FACE_SIZE).height(FACE_SIZE))
-                .width(FACE_SIZE)
-                .height(FACE_SIZE),
-        )
-        .interaction(mouse::Interaction::Pointer)
-        .on_press(Message::NewGamePressed)
-        .on_release(Message::NewGameStart)
-        .on_exit(Message::NewGameReleased)
-        .into();
+        return Column::new()
+            .push(
+                MouseArea::new(
+                    Container::new(face_image.width(FACE_SIZE).height(FACE_SIZE))
+                        .width(FACE_SIZE)
+                        .height(FACE_SIZE),
+                )
+                .interaction(mouse::Interaction::Pointer)
+                .on_press(Message::NewGamePressed)
+                .on_release(Message::NewGameStart)
+                .on_exit(Message::NewGameReleased),
+            )
+            .align_x(Alignment::Center)
+            .width(Length::FillPortion(1))
+            .into();
     }
 
     fn render_field(&self, x: usize, y: usize) -> Element<Message> {

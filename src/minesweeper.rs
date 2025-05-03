@@ -148,6 +148,11 @@ impl Minesweeper {
         return GameState::InProgress;
     }
 
+    /// Get the remaining number of mines (according to the player)
+    pub fn remaining_mines(&self) -> usize {
+        return self.mines.len() - self.flagged.len();
+    }
+
     // endregion
 
     // region Neighboring fields methods

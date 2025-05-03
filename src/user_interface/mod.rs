@@ -4,22 +4,22 @@ mod styles;
 use crate::minesweeper::*;
 use assets::MinesweeperAssets;
 use iced::{
-    mouse,
+    alignment, mouse,
     widget::{image, Column, Container, MouseArea, Row},
     Element,
 };
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
+    NewGamePressed,
+    NewGameReleased,
     Open(Position),
     Flag(Position),
-    HoverEnter(Position),
-    HoverExit(Position),
 }
 
 #[derive(Debug)]
 pub struct MinesweeperInterface {
-    hovered: Option<Position>,
+    face_pressed: bool,
     game: Minesweeper,
     assets: MinesweeperAssets,
 }
@@ -27,7 +27,7 @@ pub struct MinesweeperInterface {
 impl Default for MinesweeperInterface {
     fn default() -> Self {
         Self {
-            hovered: None,
+            face_pressed: false,
             game: Minesweeper::new(10, 10, 10),
             assets: Default::default(),
         }
@@ -36,26 +36,34 @@ impl Default for MinesweeperInterface {
 
 impl MinesweeperInterface {
     pub fn view(&self) -> Element<Message> {
-        // Build minesweeper
-        let mut grid = Column::new();
+        // Build the game board
+        let mut board = Column::new();
         for y in 0..self.game.height {
             let mut row = Row::new();
             for x in 0..self.game.width {
                 // Create a cell for each game grid cell
-                row = row.push(self.get_field(x, y));
+                row = row.push(self.render_field(x, y));
             }
-            grid = grid.push(row);
+            board = board.push(row);
         }
 
-        return grid.into();
+        // Render the controls row
+        let mut controls_row = Row::new();
+        let face = self.render_face();
+        controls_row = controls_row.push(face);
+
+        // Layout in a column
+        let mut column = Column::new();
+        column = column.push(controls_row);
+        column = column.push(board);
+
+        return column.align_x(alignment::Horizontal::Center).into();
     }
 
     pub fn update(&mut self, message: Message) {
         if let Message::Open(pos) = message {
             let result = self.game.open(pos);
-            if result.is_none() {
-                println!("Open '({}, {})' with result '{}'", pos.0, pos.1, "None");
-            } else {
+            if !result.is_none() {
                 println!(
                     "Open '({}, {})' with result '{}'",
                     pos.0,
@@ -68,13 +76,13 @@ impl MinesweeperInterface {
             self.game.flag(pos);
             println!("Flag '({}, {})'", pos.0, pos.1);
         }
-        if let Message::HoverEnter(pos) = message {
-            self.hovered = Some(pos);
-            println!("HoverEnter '({}, {})'", pos.0, pos.1);
+        if let Message::NewGamePressed = message {
+            self.face_pressed = true;
         }
-        if let Message::HoverExit(pos) = message {
-            self.hovered = None;
-            println!("HoverExit '({}, {})'", pos.0, pos.1);
+        if let Message::NewGameReleased = message {
+            self.face_pressed = false;
+            self.game = Minesweeper::new(10, 10, 10);
+            println!("Starting new game");
         }
     }
 
@@ -82,80 +90,66 @@ impl MinesweeperInterface {
         String::from("Minesweeper")
     }
 
-    fn get_field(&self, x: usize, y: usize) -> Element<Message> {
+    fn render_face(&self) -> Element<Message> {
+        const FACE_SIZE: u16 = 64;
+
+        // Get face image based on current game state
+        let mut face_image = match self.game.game_state {
+            GameState::InProgress => image(&self.assets.face),
+            GameState::Loss => image(&self.assets.face_lose),
+            GameState::Win => image(&self.assets.face_win),
+        };
+
+        // Override image if currently pressed down
+        if self.face_pressed {
+            face_image = image(&self.assets.face_pressed);
+        }
+
+        // Create mouse area with interaction logic
+        return MouseArea::new(
+            Container::new(face_image.width(FACE_SIZE).height(FACE_SIZE))
+                .width(FACE_SIZE)
+                .height(FACE_SIZE),
+        )
+        .interaction(mouse::Interaction::Pointer)
+        .on_press(Message::NewGamePressed)
+        .on_release(Message::NewGameReleased)
+        .into();
+    }
+
+    fn render_field(&self, x: usize, y: usize) -> Element<Message> {
         const FIELD_SIZE: u16 = 32;
         let pos = (x, y);
         let field_state = self.game.get_field_state(pos);
 
         // Get the field content
-        let cell_content: Element<Message> = match field_state {
-            FieldState::Unknown => image(&self.assets.closed)
-                .width(FIELD_SIZE)
-                .height(FIELD_SIZE)
-                .into(),
-            FieldState::Flagged => image(&self.assets.flag)
-                .width(FIELD_SIZE)
-                .height(FIELD_SIZE)
-                .into(),
-            FieldState::MineDefused => image(&self.assets.mine)
-                .width(FIELD_SIZE)
-                .height(FIELD_SIZE)
-                .into(),
-            FieldState::MineDetonated => image(&self.assets.mine_detonated)
-                .width(FIELD_SIZE)
-                .height(FIELD_SIZE)
-                .into(),
+        let cell_content = match field_state {
+            FieldState::Unknown => image(&self.assets.closed),
+            FieldState::Flagged => image(&self.assets.flag),
+            FieldState::MineDefused => image(&self.assets.mine),
+            FieldState::MineDetonated => image(&self.assets.mine_detonated),
             FieldState::Open(count) => match count {
-                0 => image(&self.assets.field0)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                1 => image(&self.assets.field1)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                2 => image(&self.assets.field2)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                3 => image(&self.assets.field3)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                4 => image(&self.assets.field4)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                5 => image(&self.assets.field5)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                6 => image(&self.assets.field6)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                7 => image(&self.assets.field7)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
-                8 => image(&self.assets.field8)
-                    .width(FIELD_SIZE)
-                    .height(FIELD_SIZE)
-                    .into(),
+                0 => image(&self.assets.field0),
+                1 => image(&self.assets.field1),
+                2 => image(&self.assets.field2),
+                3 => image(&self.assets.field3),
+                4 => image(&self.assets.field4),
+                5 => image(&self.assets.field5),
+                6 => image(&self.assets.field6),
+                7 => image(&self.assets.field7),
+                8 => image(&self.assets.field8),
                 _ => panic!("Mine count out of range 0 - 8"),
             },
         };
 
         // Create the field (with interaction logic)
         MouseArea::new(
-            Container::new(cell_content)
+            Container::new(cell_content.width(FIELD_SIZE).height(FIELD_SIZE))
                 .width(FIELD_SIZE)
                 .height(FIELD_SIZE),
         )
         .on_press(Message::Open(pos))
         .on_right_press(Message::Flag(pos))
-        .on_enter(Message::HoverEnter(pos))
-        .on_exit(Message::HoverExit(pos))
         .interaction(mouse::Interaction::Pointer)
         .into()
     }

@@ -11,7 +11,7 @@ use assets::MinesweeperAssets;
 use iced::{
     mouse, padding, time,
     widget::{image, Column, Container, Image, MouseArea, Row},
-    Alignment, Element, Length, Padding, Subscription,
+    Alignment, Element, Length, Subscription,
 };
 use styles::ContainerStyles;
 
@@ -91,54 +91,56 @@ impl MinesweeperInterface {
     }
 
     pub fn update(&mut self, message: Message) {
-        // Field open logic
-        if let Message::Open(pos) = message {
-            let result = self.game.open(pos);
-            self.timer_enabled = true;
-            self.open_pressed = false;
-            if !result.is_none() {
-                println!(
-                    "Open '({}, {})' with result '{}'",
-                    pos.0,
-                    pos.1,
-                    result.unwrap()
-                );
+        match message {
+            // Field open logic
+            Message::Open(pos) => {
+                let result = self.game.open(pos);
+                self.timer_enabled = true;
+                self.open_pressed = false;
+                if !result.is_none() {
+                    println!(
+                        "Open '({}, {})' with result '{}'",
+                        pos.0,
+                        pos.1,
+                        result.unwrap()
+                    );
+                }
             }
-        }
-        if let Message::OpenPressed = message {
-            self.open_pressed = true;
-        }
-        if let Message::OpenReleased = message {
-            self.open_pressed = false;
-        }
+            Message::OpenPressed => {
+                self.open_pressed = true;
+            }
+            Message::OpenReleased => {
+                self.open_pressed = false;
+            }
 
-        // Field flag logic
-        if let Message::Flag(pos) = message {
-            self.game.flag(pos);
-            self.timer_enabled = true;
-            self.open_pressed = false;
-            println!("Flag '({}, {})'", pos.0, pos.1);
-        }
+            // Field flag logic
+            Message::Flag(pos) => {
+                self.game.flag(pos);
+                self.timer_enabled = true;
+                self.open_pressed = false;
+                println!("Flag '({}, {})'", pos.0, pos.1);
+            }
 
-        // New game logic
-        if let Message::NewGamePressed = message {
-            self.face_pressed = true;
-        }
-        if let Message::NewGameReleased = message {
-            self.face_pressed = false;
-        }
-        if let Message::NewGameStart = message {
-            self.face_pressed = false;
-            self.timer_enabled = false;
-            self.timer = 0;
-            self.game = Minesweeper::new(10, 10, 10);
-            println!("Starting new game");
-        }
+            // New game logic
+            Message::NewGamePressed => {
+                self.face_pressed = true;
+            }
+            Message::NewGameReleased => {
+                self.face_pressed = false;
+            }
+            Message::NewGameStart => {
+                self.face_pressed = false;
+                self.timer_enabled = false;
+                self.timer = 0;
+                self.game = Minesweeper::new(10, 10, 10);
+                println!("Starting new game");
+            }
 
-        // Timer logic
-        if let Message::Tick(_) = message {
-            if self.timer_enabled && self.game.game_state == GameState::InProgress {
-                self.timer += 1;
+            // Timer logic
+            Message::Tick(_) => {
+                if self.timer_enabled && self.game.game_state == GameState::InProgress {
+                    self.timer += 1;
+                }
             }
         }
     }

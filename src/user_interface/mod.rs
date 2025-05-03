@@ -1,14 +1,17 @@
 mod assets;
 mod styles;
 
-use std::usize;
+use std::{
+    time::{Duration, Instant},
+    usize,
+};
 
 use crate::minesweeper::*;
 use assets::MinesweeperAssets;
 use iced::{
-    alignment, mouse,
+    mouse, time,
     widget::{image, Column, Container, Image, MouseArea, Row},
-    Alignment, Element, Length,
+    Alignment, Element, Length, Subscription,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -20,6 +23,7 @@ pub enum Message {
     OpenReleased,
     Open(Position),
     Flag(Position),
+    Tick(Instant),
 }
 
 #[derive(Debug)]
@@ -28,6 +32,8 @@ pub struct MinesweeperInterface {
     open_pressed: bool,
     game: Minesweeper,
     assets: MinesweeperAssets,
+    timer: usize,
+    timer_enabled: bool,
 }
 
 impl Default for MinesweeperInterface {
@@ -35,6 +41,8 @@ impl Default for MinesweeperInterface {
         Self {
             face_pressed: false,
             open_pressed: false,
+            timer: 0,
+            timer_enabled: false,
             game: Minesweeper::new(10, 10, 10),
             assets: Default::default(),
         }
@@ -55,9 +63,10 @@ impl MinesweeperInterface {
         }
 
         // Render the controls row
-        let mut controls_row = Row::new();
-        controls_row = controls_row.push(self.render_remaining_mines_count());
-        controls_row = controls_row.push(self.render_face());
+        let controls_row = Row::new()
+            .push(self.render_remaining_mines_count())
+            .push(self.render_face())
+            .push(self.render_timer());
 
         // Layout in a column
         let mut column = Column::new();
@@ -71,6 +80,7 @@ impl MinesweeperInterface {
         // Field open logic
         if let Message::Open(pos) = message {
             let result = self.game.open(pos);
+            self.timer_enabled = true;
             self.open_pressed = false;
             if !result.is_none() {
                 println!(
@@ -91,6 +101,7 @@ impl MinesweeperInterface {
         // Field flag logic
         if let Message::Flag(pos) = message {
             self.game.flag(pos);
+            self.timer_enabled = true;
             self.open_pressed = false;
             println!("Flag '({}, {})'", pos.0, pos.1);
         }
@@ -104,13 +115,25 @@ impl MinesweeperInterface {
         }
         if let Message::NewGameStart = message {
             self.face_pressed = false;
+            self.timer_enabled = false;
             self.game = Minesweeper::new(10, 10, 10);
             println!("Starting new game");
+        }
+
+        // Timer logic
+        if let Message::Tick(_) = message {
+            if self.timer_enabled && self.game.game_state == GameState::InProgress {
+                self.timer += 1;
+            }
         }
     }
 
     pub fn title(&self) -> String {
         String::from("Minesweeper")
+    }
+
+    pub fn subscription(&self) -> Subscription<Message> {
+        time::every(Duration::from_secs(1)).map(Message::Tick)
     }
 
     fn render_remaining_mines_count(&self) -> Element<Message> {
@@ -119,6 +142,14 @@ impl MinesweeperInterface {
         return self
             .render_seven_seg_number(mine_count, 3)
             .align_x(Alignment::Start)
+            .width(Length::FillPortion(1))
+            .into();
+    }
+
+    fn render_timer(&self) -> Element<Message> {
+        return self
+            .render_seven_seg_number(self.timer, 3)
+            .align_x(Alignment::End)
             .width(Length::FillPortion(1))
             .into();
     }
@@ -152,15 +183,13 @@ impl MinesweeperInterface {
                 '-' => image(&self.assets.score_dash),
                 _ => image(&self.assets.score_empty),
             };
-            row = row.push(Container::new(image.height(64).width(32)))
+            row = row.push(Container::new(image))
         }
 
         return Column::new().push(row);
     }
 
     fn render_face(&self) -> Element<Message> {
-        const FACE_SIZE: u16 = 64;
-
         // Get face image based on current game state
         let mut face_image = match self.game.game_state {
             GameState::InProgress => image(&self.assets.face),
@@ -178,15 +207,11 @@ impl MinesweeperInterface {
         // Create mouse area with interaction logic
         return Column::new()
             .push(
-                MouseArea::new(
-                    Container::new(face_image.width(FACE_SIZE).height(FACE_SIZE))
-                        .width(FACE_SIZE)
-                        .height(FACE_SIZE),
-                )
-                .interaction(mouse::Interaction::Pointer)
-                .on_press(Message::NewGamePressed)
-                .on_release(Message::NewGameStart)
-                .on_exit(Message::NewGameReleased),
+                MouseArea::new(Container::new(face_image))
+                    .interaction(mouse::Interaction::Pointer)
+                    .on_press(Message::NewGamePressed)
+                    .on_release(Message::NewGameStart)
+                    .on_exit(Message::NewGameReleased),
             )
             .align_x(Alignment::Center)
             .width(Length::FillPortion(1))
@@ -194,7 +219,6 @@ impl MinesweeperInterface {
     }
 
     fn render_field(&self, x: usize, y: usize) -> Element<Message> {
-        const FIELD_SIZE: u16 = 32;
         let pos = (x, y);
         let field_state = self.game.get_field_state(pos);
 
@@ -220,17 +244,13 @@ impl MinesweeperInterface {
         };
 
         // Create the field (with interaction logic)
-        MouseArea::new(
-            Container::new(cell_content.width(FIELD_SIZE).height(FIELD_SIZE))
-                .width(FIELD_SIZE)
-                .height(FIELD_SIZE),
-        )
-        .on_press(Message::OpenPressed)
-        .on_right_press(Message::OpenPressed)
-        .on_exit(Message::OpenReleased)
-        .on_release(Message::Open(pos))
-        .on_right_release(Message::Flag(pos))
-        .interaction(mouse::Interaction::Pointer)
-        .into()
+        MouseArea::new(Container::new(cell_content))
+            .on_press(Message::OpenPressed)
+            .on_right_press(Message::OpenPressed)
+            .on_exit(Message::OpenReleased)
+            .on_release(Message::Open(pos))
+            .on_right_release(Message::Flag(pos))
+            .interaction(mouse::Interaction::Pointer)
+            .into()
     }
 }

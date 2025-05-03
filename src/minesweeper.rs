@@ -34,6 +34,15 @@ pub enum GameState {
     Loss,
 }
 
+/// Enum listing the possible states of a field
+pub enum FieldState {
+    Unknown,
+    MineDefused,
+    MineDetonated,
+    Open(u8),
+    Flagged,
+}
+
 /// Minesweeper game implementation
 #[derive(Debug)]
 pub struct Minesweeper {
@@ -67,7 +76,7 @@ impl Minesweeper {
         }
     }
 
-    // region Boolean position checks
+    // region Position checks
 
     pub fn is_mined(&self, pos: Position) -> bool {
         self.mines.contains(&pos)
@@ -83,6 +92,34 @@ impl Minesweeper {
 
     pub fn is_in_bounds(&self, pos: Position) -> bool {
         pos.0 < self.width && pos.1 < self.height
+    }
+
+    /// Get the state of the field with the given position
+    pub fn get_field_state(&self, pos: Position) -> FieldState {
+        if self.is_mined(pos) {
+            // Mine has been exploded if the position is mined and the field is opened
+            if self.is_open(pos) {
+                return FieldState::MineDetonated;
+            }
+
+            // Show mine field as game has ended
+            if self.game_state != GameState::InProgress {
+                return FieldState::MineDefused;
+            }
+        }
+
+        // Show flagged field
+        if self.is_flagged(pos) {
+            return FieldState::Flagged;
+        }
+
+        // Show open field
+        if self.is_open(pos) {
+            let mine_count = self.neighboring_mines(pos);
+            return FieldState::Open(mine_count);
+        }
+
+        return FieldState::Unknown;
     }
 
     // endregion

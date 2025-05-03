@@ -35,7 +35,7 @@ impl MinesweeperInterface {
             let mut row = Row::new().spacing(5);
             for x in 0..self.game.width {
                 // Create a cell for each game grid cell
-                row = row.push(self.get_cell(x, y));
+                row = row.push(self.get_field(x, y));
             }
             grid = grid.push(row);
         }
@@ -75,11 +75,22 @@ impl MinesweeperInterface {
         String::from("Minesweeper")
     }
 
-    fn get_cell(&self, x: usize, y: usize) -> Element<Message> {
+    fn get_field(&self, x: usize, y: usize) -> Element<Message> {
         let pos = (x, y);
+        let field_state = self.game.get_field_state(pos);
 
+        // Get the field content
+        let cell_content: Element<Message> = match field_state {
+            FieldState::Unknown => Text::new(String::from("#")).into(),
+            FieldState::Flagged => Text::new(String::from("F")).into(),
+            FieldState::MineDefused => Text::new(String::from("*")).into(),
+            FieldState::MineDetonated => Text::new(String::from("*")).into(),
+            FieldState::Open(count) => Text::new(count.to_string()).into(),
+        };
+
+        // Create the field (with interaction logic)
         MouseArea::new(
-            Container::new(self.get_cell_content(x, y))
+            Container::new(cell_content)
                 .width(50)
                 .height(50)
                 .padding(10)
@@ -92,24 +103,5 @@ impl MinesweeperInterface {
         .on_exit(Message::HoverExit(pos))
         .interaction(mouse::Interaction::Pointer)
         .into()
-    }
-
-    fn get_cell_content(&self, x: usize, y: usize) -> Element<Message> {
-        let mut text = String::from("#");
-
-        // Show flagged
-        if self.game.is_flagged((x, y)) {
-            text = String::from("F");
-        }
-        // Show the mine count or a mine if the field is open
-        else if self.game.is_open((x, y)) {
-            if self.game.is_mined((x, y)) {
-                text = String::from("*");
-            } else {
-                text = self.game.neighboring_mines((x, y)).to_string();
-            }
-        }
-
-        return Text::new(text).center().into();
     }
 }

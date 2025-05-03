@@ -104,6 +104,9 @@ impl Minesweeper {
             }
 
             if self.game_state == GameState::Loss {
+                if (self.is_flagged(pos)) {
+                    return FieldState::MineDefused;
+                }
                 return FieldState::MineRevealed;
             }
 

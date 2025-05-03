@@ -51,6 +51,10 @@ impl Default for MinesweeperInterface {
 }
 
 impl MinesweeperInterface {
+    const EDGE_PADDING: u16 = 10;
+    const BORDER_PADDING: u16 = 2;
+    const FIELD_SIZE: u16 = 16;
+
     pub fn view(&self) -> Element<Message> {
         // Build the game board
         let mut board = Column::new();
@@ -78,11 +82,11 @@ impl MinesweeperInterface {
                 )
                 // Game board
                 .push(self.render_wrapper_container(board.into()))
-                .spacing(10)
+                .spacing(Self::EDGE_PADDING)
                 .align_x(Alignment::Center),
         )
         .style(ContainerStyles::game_container)
-        .padding(10)
+        .padding(Self::EDGE_PADDING)
         .into();
     }
 
@@ -158,8 +162,6 @@ impl MinesweeperInterface {
     where
         Message: 'a,
     {
-        const PADDING: u16 = 2;
-
         return Container::new(
             Container::new(
                 Container::new(content)
@@ -167,11 +169,11 @@ impl MinesweeperInterface {
                     .center(Length::Shrink),
             )
             .style(ContainerStyles::wrapper_container_top_left)
-            .padding(padding::left(PADDING).top(PADDING))
+            .padding(padding::left(Self::BORDER_PADDING).top(Self::BORDER_PADDING))
             .center(Length::Shrink),
         )
         .style(ContainerStyles::wrapper_container_bottom_right)
-        .padding(padding::bottom(PADDING).right(PADDING))
+        .padding(padding::bottom(Self::BORDER_PADDING).right(Self::BORDER_PADDING))
         .center(Length::Shrink)
         .into();
     }

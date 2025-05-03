@@ -11,6 +11,8 @@ fn main() -> iced::Result {
         MinesweeperInterface::view,
     )
     .subscription(MinesweeperInterface::subscription)
+    .scale_factor(MinesweeperInterface::scale_factor)
+    .resizable(false)
     .font(include_bytes!("../resources/fonts/IBMPlexSans.ttf").as_slice())
     .default_font(Font::with_name("IBM Plex Sans"))
     .antialiasing(false)

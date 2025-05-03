@@ -11,7 +11,7 @@ use assets::MinesweeperAssets;
 use iced::{
     mouse, time,
     widget::{image, Column, Container, Image, MouseArea, Row},
-    Alignment, Element, Length, Subscription,
+    Alignment, Element, Length, Size, Subscription,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -134,6 +134,10 @@ impl MinesweeperInterface {
 
     pub fn subscription(&self) -> Subscription<Message> {
         time::every(Duration::from_secs(1)).map(Message::Tick)
+    }
+
+    pub fn scale_factor(&self) -> f64 {
+        return 2.0;
     }
 
     fn render_remaining_mines_count(&self) -> Element<Message> {

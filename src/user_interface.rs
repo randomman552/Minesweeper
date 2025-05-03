@@ -10,11 +10,11 @@ pub enum Message {
     Flag(Position),
 }
 
-pub struct UserInterface {
+pub struct MinesweeperInterface {
     game: Minesweeper,
 }
 
-impl Default for UserInterface {
+impl Default for MinesweeperInterface {
     fn default() -> Self {
         Self {
             game: Minesweeper::new(10, 10, 10),
@@ -22,7 +22,7 @@ impl Default for UserInterface {
     }
 }
 
-impl UserInterface {
+impl MinesweeperInterface {
     pub fn view(&self) -> Element<Message> {
         // Build each row
         let mut grid = Column::new().spacing(5);

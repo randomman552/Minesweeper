@@ -6,9 +6,9 @@ use user_interface::*;
 
 fn main() -> iced::Result {
     iced::application(
-        UserInterface::title,
-        UserInterface::update,
-        UserInterface::view,
+        MinesweeperInterface::title,
+        MinesweeperInterface::update,
+        MinesweeperInterface::view,
     )
     .font(include_bytes!("../resources/fonts/IBMPlexSans-Italic.ttf").as_slice())
     .font(include_bytes!("../resources/fonts/IBMPlexSans.ttf").as_slice())

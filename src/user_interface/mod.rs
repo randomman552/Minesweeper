@@ -1,9 +1,12 @@
+mod styles;
+
 use crate::minesweeper::*;
 use iced::{
     mouse,
     widget::{container, Column, Container, MouseArea, Row, Text},
     Element,
 };
+use styles::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -88,13 +91,20 @@ impl MinesweeperInterface {
             FieldState::Open(count) => Text::new(count.to_string()).into(),
         };
 
+        // Get the style of the field container
+        let container_style = match field_state {
+            FieldState::Open(_) => ContainerStyles::open_field_style,
+            FieldState::MineDetonated => ContainerStyles::exploded_field_style,
+            _ => ContainerStyles::closed_field_style,
+        };
+
         // Create the field (with interaction logic)
         MouseArea::new(
             Container::new(cell_content)
                 .width(50)
                 .height(50)
                 .padding(10)
-                .style(container::bordered_box)
+                .style(container_style)
                 .center(50),
         )
         .on_press(Message::Open(pos))

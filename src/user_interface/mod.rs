@@ -1,6 +1,8 @@
 mod assets;
 mod styles;
 
+use std::usize;
+
 use crate::minesweeper::*;
 use assets::MinesweeperAssets;
 use iced::{
@@ -54,7 +56,7 @@ impl MinesweeperInterface {
 
         // Render the controls row
         let mut controls_row = Row::new();
-        controls_row = controls_row.push(self.render_remaining_mines());
+        controls_row = controls_row.push(self.render_remaining_mines_count());
         controls_row = controls_row.push(self.render_face());
 
         // Layout in a column
@@ -111,20 +113,31 @@ impl MinesweeperInterface {
         String::from("Minesweeper")
     }
 
-    fn render_remaining_mines(&self) -> Element<Message> {
+    fn render_remaining_mines_count(&self) -> Element<Message> {
         let mine_count = self.game.remaining_mines();
-        let mut mine_count_string = mine_count.to_string();
 
-        // Pad to the left if necessary
-        if mine_count < 100 {
-            mine_count_string = String::from("0") + &mine_count_string;
-        }
-        if mine_count < 10 {
-            mine_count_string = String::from("0") + &mine_count_string;
+        return self
+            .render_seven_seg_number(mine_count, 3)
+            .align_x(Alignment::Start)
+            .width(Length::FillPortion(1))
+            .into();
+    }
+
+    /// Render the given number in seven segment digits (with padding to min_length)
+    fn render_seven_seg_number(&self, number: usize, min_length: usize) -> Column<Message> {
+        // Create string and pad to the minimum length
+        let mut number_string = number.to_string();
+        while number_string.len() < min_length {
+            number_string = String::from("0") + &number_string;
         }
 
+        return self.render_seven_seg_string(number_string);
+    }
+
+    /// Render the given string in seven segment digits
+    fn render_seven_seg_string(&self, str: String) -> Column<Message> {
         let mut row = Row::new();
-        for (_, c) in mine_count_string.chars().enumerate() {
+        for (_, c) in str.chars().enumerate() {
             let image: Image = match c {
                 '0' => image(&self.assets.score0),
                 '1' => image(&self.assets.score1),
@@ -142,11 +155,7 @@ impl MinesweeperInterface {
             row = row.push(Container::new(image.height(64).width(32)))
         }
 
-        return Column::new()
-            .push(row)
-            .align_x(Alignment::Start)
-            .width(Length::FillPortion(1))
-            .into();
+        return Column::new().push(row);
     }
 
     fn render_face(&self) -> Element<Message> {

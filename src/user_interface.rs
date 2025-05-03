@@ -1,7 +1,7 @@
 use crate::minesweeper::*;
 use iced::{
     widget::{container, Column, Container, MouseArea, Row, Text},
-    Element,
+    Element, Font,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -47,6 +47,10 @@ impl UserInterface {
         }
     }
 
+    pub fn title(&self) -> String {
+        String::from("Minesweeper")
+    }
+
     fn get_cell(&self, x: usize, y: usize) -> Element<Message> {
         let mine_count = self.get_cell_text(x, y);
 
@@ -64,7 +68,7 @@ impl UserInterface {
     }
 
     fn get_cell_text(&self, x: usize, y: usize) -> String {
-        let mut text = String::from("#");
+        let mut text = String::from("TEST");
 
         // Show flagged
         if self.game.is_flagged((x, y)) {

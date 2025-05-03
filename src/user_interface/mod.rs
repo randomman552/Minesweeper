@@ -116,6 +116,7 @@ impl MinesweeperInterface {
         if let Message::NewGameStart = message {
             self.face_pressed = false;
             self.timer_enabled = false;
+            self.timer = 0;
             self.game = Minesweeper::new(10, 10, 10);
             println!("Starting new game");
         }

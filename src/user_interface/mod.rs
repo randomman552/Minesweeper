@@ -9,10 +9,11 @@ use std::{
 use crate::minesweeper::*;
 use assets::MinesweeperAssets;
 use iced::{
-    mouse, time,
+    mouse, padding, time,
     widget::{image, Column, Container, Image, MouseArea, Row},
-    Alignment, Element, Length, Size, Subscription,
+    Alignment, Element, Length, Padding, Subscription,
 };
+use styles::ContainerStyles;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -62,18 +63,27 @@ impl MinesweeperInterface {
             board = board.push(row);
         }
 
-        // Render the controls row
-        let controls_row = Row::new()
-            .push(self.render_remaining_mines_count())
-            .push(self.render_face())
-            .push(self.render_timer());
-
         // Layout in a column
-        let mut column = Column::new();
-        column = column.push(controls_row);
-        column = column.push(board);
-
-        return column.align_x(Alignment::Center).into();
+        return Container::new(
+            Column::new()
+                .push(
+                    // Controls row
+                    self.render_wrapper_container(
+                        Row::new()
+                            .push(self.render_remaining_mines_count())
+                            .push(self.render_face())
+                            .push(self.render_timer())
+                            .into(),
+                    ),
+                )
+                // Game board
+                .push(self.render_wrapper_container(board.into()))
+                .spacing(10)
+                .align_x(Alignment::Center),
+        )
+        .style(ContainerStyles::game_container)
+        .padding(10)
+        .into();
     }
 
     pub fn update(&mut self, message: Message) {
@@ -139,6 +149,31 @@ impl MinesweeperInterface {
 
     pub fn scale_factor(&self) -> f64 {
         return 2.0;
+    }
+
+    fn render_wrapper_container<'a, Message>(
+        &self,
+        content: Element<'a, Message>,
+    ) -> Element<'a, Message>
+    where
+        Message: 'a,
+    {
+        const PADDING: u16 = 2;
+
+        return Container::new(
+            Container::new(
+                Container::new(content)
+                    .style(ContainerStyles::wrapper_container)
+                    .center(Length::Shrink),
+            )
+            .style(ContainerStyles::wrapper_container_top_left)
+            .padding(padding::left(PADDING).top(PADDING))
+            .center(Length::Shrink),
+        )
+        .style(ContainerStyles::wrapper_container_bottom_right)
+        .padding(padding::bottom(PADDING).right(PADDING))
+        .center(Length::Shrink)
+        .into();
     }
 
     fn render_remaining_mines_count(&self) -> Element<Message> {

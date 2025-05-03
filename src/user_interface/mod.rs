@@ -2,7 +2,7 @@ mod assets;
 mod styles;
 
 use crate::minesweeper::*;
-use assets::MinesweeperFieldAssets;
+use assets::MinesweeperAssets;
 use iced::{
     mouse,
     widget::{image, Column, Container, MouseArea, Row},
@@ -21,7 +21,7 @@ pub enum Message {
 pub struct MinesweeperInterface {
     hovered: Option<Position>,
     game: Minesweeper,
-    field_assets: MinesweeperFieldAssets,
+    assets: MinesweeperAssets,
 }
 
 impl Default for MinesweeperInterface {
@@ -29,7 +29,7 @@ impl Default for MinesweeperInterface {
         Self {
             hovered: None,
             game: Minesweeper::new(10, 10, 10),
-            field_assets: Default::default(),
+            assets: Default::default(),
         }
     }
 }
@@ -89,56 +89,56 @@ impl MinesweeperInterface {
 
         // Get the field content
         let cell_content: Element<Message> = match field_state {
-            FieldState::Unknown => image(&self.field_assets.closed)
+            FieldState::Unknown => image(&self.assets.closed)
                 .width(FIELD_SIZE)
                 .height(FIELD_SIZE)
                 .into(),
-            FieldState::Flagged => image(&self.field_assets.flag)
+            FieldState::Flagged => image(&self.assets.flag)
                 .width(FIELD_SIZE)
                 .height(FIELD_SIZE)
                 .into(),
-            FieldState::MineDefused => image(&self.field_assets.mine)
+            FieldState::MineDefused => image(&self.assets.mine)
                 .width(FIELD_SIZE)
                 .height(FIELD_SIZE)
                 .into(),
-            FieldState::MineDetonated => image(&self.field_assets.mine_detonated)
+            FieldState::MineDetonated => image(&self.assets.mine_detonated)
                 .width(FIELD_SIZE)
                 .height(FIELD_SIZE)
                 .into(),
             FieldState::Open(count) => match count {
-                0 => image(&self.field_assets.field0)
+                0 => image(&self.assets.field0)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                1 => image(&self.field_assets.field1)
+                1 => image(&self.assets.field1)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                2 => image(&self.field_assets.field2)
+                2 => image(&self.assets.field2)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                3 => image(&self.field_assets.field3)
+                3 => image(&self.assets.field3)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                4 => image(&self.field_assets.field4)
+                4 => image(&self.assets.field4)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                5 => image(&self.field_assets.field5)
+                5 => image(&self.assets.field5)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                6 => image(&self.field_assets.field6)
+                6 => image(&self.assets.field6)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                7 => image(&self.field_assets.field7)
+                7 => image(&self.assets.field7)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),
-                8 => image(&self.field_assets.field8)
+                8 => image(&self.assets.field8)
                     .width(FIELD_SIZE)
                     .height(FIELD_SIZE)
                     .into(),

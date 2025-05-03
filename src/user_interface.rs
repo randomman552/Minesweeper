@@ -1,7 +1,7 @@
 use crate::minesweeper::*;
 use iced::{
     widget::{container, Column, Container, MouseArea, Row, Text},
-    Element, Font,
+    Element,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -40,10 +40,21 @@ impl MinesweeperInterface {
 
     pub fn update(&mut self, message: Message) {
         if let Message::Open(pos) = message {
-            self.game.open(pos);
+            let result = self.game.open(pos);
+            if result.is_none() {
+                println!("Opened '({}, {})' with result '{}'", pos.0, pos.1, "None")
+            } else {
+                println!(
+                    "Opened '({}, {})' with result '{}'",
+                    pos.0,
+                    pos.1,
+                    result.unwrap()
+                )
+            }
         }
         if let Message::Flag(pos) = message {
             self.game.flag(pos);
+            println!("Flagged '({}, {})'", pos.0, pos.1)
         }
     }
 

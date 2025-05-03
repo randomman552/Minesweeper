@@ -6,11 +6,27 @@ use std::{
 
 pub type Position = (usize, usize);
 
+/// Result of opening a minesweeper field
 pub enum OpenResult {
     Mine,
     NoMine(u8),
 }
 
+/// Display implementation for [OpenResult]
+impl Display for OpenResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let &OpenResult::Mine = self {
+            f.write_str("Mine")?;
+        }
+        if let &OpenResult::NoMine(count) = self {
+            write!(f, "NoMine({})", count)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Enum listing the possible states of the game
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
     InProgress,
@@ -18,6 +34,7 @@ pub enum GameState {
     Loss,
 }
 
+/// Minesweeper game implementation
 #[derive(Debug)]
 pub struct Minesweeper {
     pub width: usize,
@@ -148,7 +165,7 @@ impl Minesweeper {
         }
 
         self.check_game_state();
-        return Some(OpenResult::NoMine(0));
+        return Some(OpenResult::NoMine(mine_count));
     }
 
     pub fn flag(&mut self, pos: Position) {

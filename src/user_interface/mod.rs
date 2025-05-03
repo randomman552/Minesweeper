@@ -14,6 +14,8 @@ pub enum Message {
     NewGamePressed,
     NewGameReleased,
     NewGameStart,
+    OpenPressed,
+    OpenReleased,
     Open(Position),
     Flag(Position),
 }
@@ -21,6 +23,7 @@ pub enum Message {
 #[derive(Debug)]
 pub struct MinesweeperInterface {
     face_pressed: bool,
+    open_pressed: bool,
     game: Minesweeper,
     assets: MinesweeperAssets,
 }
@@ -29,6 +32,7 @@ impl Default for MinesweeperInterface {
     fn default() -> Self {
         Self {
             face_pressed: false,
+            open_pressed: false,
             game: Minesweeper::new(10, 10, 10),
             assets: Default::default(),
         }
@@ -62,8 +66,10 @@ impl MinesweeperInterface {
     }
 
     pub fn update(&mut self, message: Message) {
+        // Field open logic
         if let Message::Open(pos) = message {
             let result = self.game.open(pos);
+            self.open_pressed = false;
             if !result.is_none() {
                 println!(
                     "Open '({}, {})' with result '{}'",
@@ -73,10 +79,21 @@ impl MinesweeperInterface {
                 );
             }
         }
+        if let Message::OpenPressed = message {
+            self.open_pressed = true;
+        }
+        if let Message::OpenReleased = message {
+            self.open_pressed = false;
+        }
+
+        // Field flag logic
         if let Message::Flag(pos) = message {
             self.game.flag(pos);
+            self.open_pressed = false;
             println!("Flag '({}, {})'", pos.0, pos.1);
         }
+
+        // New game logic
         if let Message::NewGamePressed = message {
             self.face_pressed = true;
         }
@@ -107,6 +124,8 @@ impl MinesweeperInterface {
         // Override image if currently pressed down
         if self.face_pressed {
             face_image = image(&self.assets.face_pressed);
+        } else if (self.open_pressed) {
+            face_image = image(&self.assets.face_open);
         }
 
         // Create mouse area with interaction logic
@@ -154,8 +173,11 @@ impl MinesweeperInterface {
                 .width(FIELD_SIZE)
                 .height(FIELD_SIZE),
         )
-        .on_press(Message::Open(pos))
-        .on_right_press(Message::Flag(pos))
+        .on_press(Message::OpenPressed)
+        .on_right_press(Message::OpenPressed)
+        .on_exit(Message::OpenReleased)
+        .on_release(Message::Open(pos))
+        .on_right_release(Message::Flag(pos))
         .interaction(mouse::Interaction::Pointer)
         .into()
     }

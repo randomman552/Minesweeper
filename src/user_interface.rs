@@ -68,7 +68,7 @@ impl MinesweeperInterface {
     }
 
     fn get_cell_text(&self, x: usize, y: usize) -> String {
-        let mut text = String::from("TEST");
+        let mut text = String::from("#");
 
         // Show flagged
         if self.game.is_flagged((x, y)) {

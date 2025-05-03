@@ -10,7 +10,6 @@ fn main() -> iced::Result {
         MinesweeperInterface::update,
         MinesweeperInterface::view,
     )
-    .font(include_bytes!("../resources/fonts/IBMPlexSans-Italic.ttf").as_slice())
     .font(include_bytes!("../resources/fonts/IBMPlexSans.ttf").as_slice())
     .default_font(Font::with_name("IBM Plex Sans"))
     .run()

@@ -1,12 +1,13 @@
+mod assets;
 mod styles;
 
 use crate::minesweeper::*;
+use assets::MinesweeperFieldAssets;
 use iced::{
     mouse,
-    widget::{container, Column, Container, MouseArea, Row, Text},
+    widget::{image, Column, Container, MouseArea, Row},
     Element,
 };
-use styles::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -16,9 +17,11 @@ pub enum Message {
     HoverExit(Position),
 }
 
+#[derive(Debug)]
 pub struct MinesweeperInterface {
     hovered: Option<Position>,
     game: Minesweeper,
+    field_assets: MinesweeperFieldAssets,
 }
 
 impl Default for MinesweeperInterface {
@@ -26,16 +29,17 @@ impl Default for MinesweeperInterface {
         Self {
             hovered: None,
             game: Minesweeper::new(10, 10, 10),
+            field_assets: Default::default(),
         }
     }
 }
 
 impl MinesweeperInterface {
     pub fn view(&self) -> Element<Message> {
-        // Build each row
-        let mut grid = Column::new().spacing(5);
+        // Build minesweeper
+        let mut grid = Column::new();
         for y in 0..self.game.height {
-            let mut row = Row::new().spacing(5);
+            let mut row = Row::new();
             for x in 0..self.game.width {
                 // Create a cell for each game grid cell
                 row = row.push(self.get_field(x, y));
@@ -79,33 +83,74 @@ impl MinesweeperInterface {
     }
 
     fn get_field(&self, x: usize, y: usize) -> Element<Message> {
+        const FIELD_SIZE: u16 = 32;
         let pos = (x, y);
         let field_state = self.game.get_field_state(pos);
 
         // Get the field content
         let cell_content: Element<Message> = match field_state {
-            FieldState::Unknown => Text::new(String::from("#")).into(),
-            FieldState::Flagged => Text::new(String::from("F")).into(),
-            FieldState::MineDefused => Text::new(String::from("*")).into(),
-            FieldState::MineDetonated => Text::new(String::from("*")).into(),
-            FieldState::Open(count) => Text::new(count.to_string()).into(),
-        };
-
-        // Get the style of the field container
-        let container_style = match field_state {
-            FieldState::Open(_) => ContainerStyles::open_field_style,
-            FieldState::MineDetonated => ContainerStyles::exploded_field_style,
-            _ => ContainerStyles::closed_field_style,
+            FieldState::Unknown => image(&self.field_assets.closed)
+                .width(FIELD_SIZE)
+                .height(FIELD_SIZE)
+                .into(),
+            FieldState::Flagged => image(&self.field_assets.flag)
+                .width(FIELD_SIZE)
+                .height(FIELD_SIZE)
+                .into(),
+            FieldState::MineDefused => image(&self.field_assets.mine)
+                .width(FIELD_SIZE)
+                .height(FIELD_SIZE)
+                .into(),
+            FieldState::MineDetonated => image(&self.field_assets.mine_detonated)
+                .width(FIELD_SIZE)
+                .height(FIELD_SIZE)
+                .into(),
+            FieldState::Open(count) => match count {
+                0 => image(&self.field_assets.field0)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                1 => image(&self.field_assets.field1)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                2 => image(&self.field_assets.field2)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                3 => image(&self.field_assets.field3)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                4 => image(&self.field_assets.field4)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                5 => image(&self.field_assets.field5)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                6 => image(&self.field_assets.field6)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                7 => image(&self.field_assets.field7)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                8 => image(&self.field_assets.field8)
+                    .width(FIELD_SIZE)
+                    .height(FIELD_SIZE)
+                    .into(),
+                _ => panic!("Mine count out of range 0 - 8"),
+            },
         };
 
         // Create the field (with interaction logic)
         MouseArea::new(
             Container::new(cell_content)
-                .width(50)
-                .height(50)
-                .padding(10)
-                .style(container_style)
-                .center(50),
+                .width(FIELD_SIZE)
+                .height(FIELD_SIZE),
         )
         .on_press(Message::Open(pos))
         .on_right_press(Message::Flag(pos))

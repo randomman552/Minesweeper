@@ -4,7 +4,7 @@ use std::{
     fmt::{Display, Write},
 };
 
-pub type Position = (usize, usize);
+pub type Position = (u16, u16);
 
 /// Result of opening a minesweeper field
 pub enum OpenResult {
@@ -47,8 +47,8 @@ pub enum FieldState {
 /// Minesweeper game implementation
 #[derive(Debug)]
 pub struct Minesweeper {
-    pub width: usize,
-    pub height: usize,
+    pub width: u16,
+    pub height: u16,
     pub game_state: GameState,
     opened: HashSet<Position>,
     flagged: HashSet<Position>,
@@ -56,7 +56,7 @@ pub struct Minesweeper {
 }
 
 impl Minesweeper {
-    pub fn new(width: usize, height: usize, num_mines: usize) -> Minesweeper {
+    pub fn new(width: u16, height: u16, num_mines: usize) -> Minesweeper {
         Minesweeper {
             width,
             height,
@@ -139,7 +139,7 @@ impl Minesweeper {
 
         // Check for all mines flagged and all fields opened or flagged
         if self.mines.intersection(&self.flagged).count() == self.mines.len()
-            && self.opened.union(&self.flagged).count() == self.width * self.height
+            && self.opened.union(&self.flagged).count() == usize::from(self.width * self.height)
         {
             self.game_state = GameState::Win;
             return GameState::Win;

@@ -11,7 +11,7 @@ use assets::MinesweeperAssets;
 use iced::{
     mouse, padding, time,
     widget::{image, Column, Container, Image, MouseArea, Row},
-    Alignment, Element, Length, Subscription,
+    window, Alignment, Element, Length, Size, Subscription,
 };
 use styles::ContainerStyles;
 
@@ -25,6 +25,7 @@ pub enum Message {
     Open(Position),
     Flag(Position),
     Tick(Instant),
+    Resize,
 }
 
 #[derive(Debug)]
@@ -54,6 +55,7 @@ impl MinesweeperInterface {
     const EDGE_PADDING: u16 = 10;
     const BORDER_PADDING: u16 = 2;
     const FIELD_SIZE: u16 = 16;
+    const SCALE_FACTOR: u16 = 2;
 
     pub fn view(&self) -> Element<Message> {
         // Build the game board
@@ -142,6 +144,11 @@ impl MinesweeperInterface {
                     self.timer += 1;
                 }
             }
+
+            // Resize logic
+            Message::Resize => {
+                self.resize();
+            }
         }
     }
 
@@ -154,7 +161,27 @@ impl MinesweeperInterface {
     }
 
     pub fn scale_factor(&self) -> f64 {
-        return 2.0;
+        return Self::SCALE_FACTOR.into();
+    }
+
+    pub fn resize(&self) {
+        let size = self.calculate_size();
+        let _ = window::get_latest().map(move |id| window::resize::<Message>(id.unwrap(), size));
+    }
+
+    pub fn calculate_size(&self) -> Size {
+        let width = (self.game.width * Self::FIELD_SIZE)
+            + (Self::EDGE_PADDING * 2)
+            + (Self::BORDER_PADDING * 2);
+
+        let height = (self.game.height * Self::FIELD_SIZE)
+            + (Self::EDGE_PADDING * 4)
+            + (Self::BORDER_PADDING * 3);
+
+        return Size::new(
+            (width * Self::SCALE_FACTOR).into(),
+            (height * Self::SCALE_FACTOR).into(),
+        );
     }
 
     fn render_wrapper_container<'a, Message>(
@@ -262,7 +289,7 @@ impl MinesweeperInterface {
             .into();
     }
 
-    fn render_field(&self, x: usize, y: usize) -> Element<Message> {
+    fn render_field(&self, x: u16, y: u16) -> Element<Message> {
         let pos = (x, y);
         let field_state = self.game.get_field_state(pos);
 

@@ -37,6 +37,7 @@ pub enum GameState {
 /// Enum listing the possible states of a field
 pub enum FieldState {
     Unknown,
+    MineRevealed,
     MineDefused,
     MineDetonated,
     Open(u8),
@@ -102,8 +103,11 @@ impl Minesweeper {
                 return FieldState::MineDetonated;
             }
 
-            // Show mine field as game has ended
-            if self.game_state != GameState::InProgress {
+            if self.game_state == GameState::Loss {
+                return FieldState::MineRevealed;
+            }
+
+            if self.game_state == GameState::Win {
                 return FieldState::MineDefused;
             }
         }

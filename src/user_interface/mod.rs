@@ -13,6 +13,7 @@ use iced::{
 pub enum Message {
     NewGamePressed,
     NewGameReleased,
+    NewGameStart,
     Open(Position),
     Flag(Position),
 }
@@ -81,6 +82,9 @@ impl MinesweeperInterface {
         }
         if let Message::NewGameReleased = message {
             self.face_pressed = false;
+        }
+        if let Message::NewGameStart = message {
+            self.face_pressed = false;
             self.game = Minesweeper::new(10, 10, 10);
             println!("Starting new game");
         }
@@ -113,7 +117,8 @@ impl MinesweeperInterface {
         )
         .interaction(mouse::Interaction::Pointer)
         .on_press(Message::NewGamePressed)
-        .on_release(Message::NewGameReleased)
+        .on_release(Message::NewGameStart)
+        .on_exit(Message::NewGameReleased)
         .into();
     }
 
@@ -126,7 +131,8 @@ impl MinesweeperInterface {
         let cell_content = match field_state {
             FieldState::Unknown => image(&self.assets.closed),
             FieldState::Flagged => image(&self.assets.flag),
-            FieldState::MineDefused => image(&self.assets.mine),
+            FieldState::MineRevealed => image(&self.assets.mine),
+            FieldState::MineDefused => image(&self.assets.mine_defused),
             FieldState::MineDetonated => image(&self.assets.mine_detonated),
             FieldState::Open(count) => match count {
                 0 => image(&self.assets.field0),

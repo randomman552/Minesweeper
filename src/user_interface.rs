@@ -1,5 +1,6 @@
 use crate::minesweeper::*;
 use iced::{
+    mouse,
     widget::{container, Column, Container, MouseArea, Row, Text},
     Element,
 };
@@ -64,6 +65,7 @@ impl MinesweeperInterface {
 
     fn get_cell(&self, x: usize, y: usize) -> Element<Message> {
         let mine_count = self.get_cell_text(x, y);
+        let pos = (x, y);
 
         MouseArea::new(
             Container::new(Text::new(mine_count).center())
@@ -73,8 +75,9 @@ impl MinesweeperInterface {
                 .style(container::bordered_box)
                 .center(50),
         )
-        .on_press(Message::Open((x, y)))
-        .on_right_press(Message::Flag((x, y)))
+        .on_press(Message::Open(pos))
+        .on_right_press(Message::Flag(pos))
+        .interaction(mouse::Interaction::Pointer)
         .into()
     }
 

@@ -9,15 +9,19 @@ use iced::{
 pub enum Message {
     Open(Position),
     Flag(Position),
+    HoverEnter(Position),
+    HoverExit(Position),
 }
 
 pub struct MinesweeperInterface {
+    hovered: Option<Position>,
     game: Minesweeper,
 }
 
 impl Default for MinesweeperInterface {
     fn default() -> Self {
         Self {
+            hovered: None,
             game: Minesweeper::new(10, 10, 10),
         }
     }
@@ -43,19 +47,27 @@ impl MinesweeperInterface {
         if let Message::Open(pos) = message {
             let result = self.game.open(pos);
             if result.is_none() {
-                println!("Opened '({}, {})' with result '{}'", pos.0, pos.1, "None")
+                println!("Open '({}, {})' with result '{}'", pos.0, pos.1, "None");
             } else {
                 println!(
-                    "Opened '({}, {})' with result '{}'",
+                    "Open '({}, {})' with result '{}'",
                     pos.0,
                     pos.1,
                     result.unwrap()
-                )
+                );
             }
         }
         if let Message::Flag(pos) = message {
             self.game.flag(pos);
-            println!("Flagged '({}, {})'", pos.0, pos.1)
+            println!("Flag '({}, {})'", pos.0, pos.1);
+        }
+        if let Message::HoverEnter(pos) = message {
+            self.hovered = Some(pos);
+            println!("HoverEnter '({}, {})'", pos.0, pos.1);
+        }
+        if let Message::HoverExit(pos) = message {
+            self.hovered = None;
+            println!("HoverExit '({}, {})'", pos.0, pos.1);
         }
     }
 
@@ -77,6 +89,8 @@ impl MinesweeperInterface {
         )
         .on_press(Message::Open(pos))
         .on_right_press(Message::Flag(pos))
+        .on_enter(Message::HoverEnter(pos))
+        .on_exit(Message::HoverExit(pos))
         .interaction(mouse::Interaction::Pointer)
         .into()
     }

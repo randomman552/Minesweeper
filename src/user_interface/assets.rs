@@ -15,7 +15,7 @@ pub struct MinesweeperAssets {
     pub closed: image::Handle,
     pub flag: image::Handle,
     pub mine: image::Handle,
-    pub mine_defused: image::Handle,
+    pub mine_false: image::Handle,
     pub mine_detonated: image::Handle,
     pub question_closed: image::Handle,
     pub question_open: image::Handle,
@@ -82,8 +82,8 @@ impl Default for MinesweeperAssets {
             flag: image::Handle::from_bytes(
                 include_bytes!("../../resources/images/field/flag.png").as_slice(),
             ),
-            mine_defused: image::Handle::from_bytes(
-                include_bytes!("../../resources/images/field/mine_defused.png").as_slice(),
+            mine_false: image::Handle::from_bytes(
+                include_bytes!("../../resources/images/field/mine_false.png").as_slice(),
             ),
             mine_detonated: image::Handle::from_bytes(
                 include_bytes!("../../resources/images/field/mine_detonated.png").as_slice(),
@@ -91,9 +91,9 @@ impl Default for MinesweeperAssets {
             mine: image::Handle::from_bytes(
                 include_bytes!("../../resources/images/field/mine.png").as_slice(),
             ),
-            question_closed: image::Handle::from_bytes(
-                include_bytes!("../../resources/images/field/question_closed.png").as_slice(),
-            ),
+            // question_closed: image::Handle::from_bytes(
+            //     include_bytes!("../../resources/images/field/question_closed.png").as_slice(),
+            // ),
             question_open: image::Handle::from_bytes(
                 include_bytes!("../../resources/images/field/question_open.png").as_slice(),
             ),

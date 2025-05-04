@@ -367,7 +367,7 @@ impl MinesweeperInterface {
             FieldState::Flagged => image(&self.assets.flag),
             FieldState::Question => image(&self.assets.question_closed),
             FieldState::MineRevealed => image(&self.assets.mine),
-            FieldState::MineDefused => image(&self.assets.mine_defused),
+            FieldState::NoMine => image(&self.assets.mine_false),
             FieldState::MineDetonated => image(&self.assets.mine_detonated),
             FieldState::Open(count) => match count {
                 0 => image(&self.assets.field0),

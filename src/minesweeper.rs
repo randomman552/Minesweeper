@@ -38,7 +38,7 @@ pub enum GameState {
 pub enum FieldState {
     Unknown,
     MineRevealed,
-    MineDefused,
+    NoMine,
     MineDetonated,
     Open(u8),
     Flagged,
@@ -104,32 +104,33 @@ impl Minesweeper {
 
     /// Get the state of the field with the given position
     pub fn get_field_state(&self, pos: Position) -> FieldState {
-        if self.is_mined(pos) {
-            // Mine has been exploded if the position is mined and the field is opened
-            if self.is_open(pos) {
-                return FieldState::MineDetonated;
+        if self.game_state == GameState::InProgress {
+            // Show flagged field
+            if self.is_flagged(pos) {
+                return FieldState::Flagged;
             }
 
-            if self.game_state == GameState::Loss {
-                if self.is_flagged(pos) {
-                    return FieldState::MineDefused;
+            // Show question field
+            if self.is_question(pos) {
+                return FieldState::Question;
+            }
+        } else {
+            if self.is_mined(pos) {
+                // Player opened a mine, whoops
+                if self.is_open(pos) {
+                    return FieldState::MineDetonated;
                 }
                 return FieldState::MineRevealed;
             }
-
-            if self.game_state == GameState::Win {
-                return FieldState::MineDefused;
+            // Player falsely flagged this as a mine
+            else if self.is_flagged(pos) {
+                return FieldState::NoMine;
             }
-        }
 
-        // Show flagged field
-        if self.is_flagged(pos) {
-            return FieldState::Flagged;
-        }
-
-        // Show question field
-        if self.is_question(pos) {
-            return FieldState::Question;
+            // Player incorrectly flagged this was a mine
+            if !self.is_mined(pos) && self.is_flagged(pos) {
+                return FieldState::NoMine;
+            }
         }
 
         // Show open field
@@ -152,10 +153,8 @@ impl Minesweeper {
             return GameState::Loss;
         }
 
-        // Check for all mines flagged and all fields opened or flagged
-        if self.mines.intersection(&self.flagged).count() == self.mines.len()
-            && self.opened.union(&self.flagged).count() == usize::from(self.width * self.height)
-        {
+        // Player wins once all fields without a mine have been revealed
+        if self.opened.len() == usize::from(self.width * self.height) - self.mines.len() {
             self.game_state = GameState::Win;
             return GameState::Win;
         }

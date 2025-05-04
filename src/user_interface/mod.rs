@@ -9,9 +9,10 @@ use std::{
 use crate::minesweeper::*;
 use assets::MinesweeperAssets;
 use iced::{
-    mouse, padding, time,
+    mouse::{self, Interaction},
+    padding, time,
     widget::{image, Button, Column, Container, Image, MouseArea, Row, Text},
-    window::{self, resize},
+    window::{self},
     Alignment, Element, Length, Size, Subscription, Task,
 };
 use styles::ContainerStyles;
@@ -195,19 +196,21 @@ impl MinesweeperInterface {
         if self.show_new_game_menu {
             board = board
                 .push(
-                    Button::new(Text::new("Easy").width(Length::Fill).center())
-                        .on_press(Message::NewGameStart(GameDifficulty::Easy))
-                        .width(200),
-                )
-                .push(
-                    Button::new(Text::new("Medium").width(Length::Fill).center())
-                        .on_press(Message::NewGameStart(GameDifficulty::Medium))
-                        .width(200),
-                )
-                .push(
-                    Button::new(Text::new("Hard").width(Length::Fill).center())
-                        .on_press(Message::NewGameStart(GameDifficulty::Hard))
-                        .width(200),
+                    Column::new()
+                        .push(self.render_button(
+                            String::from("Easy"),
+                            Message::NewGameStart(GameDifficulty::Easy),
+                        ))
+                        .push(self.render_button(
+                            String::from("Medium"),
+                            Message::NewGameStart(GameDifficulty::Medium),
+                        ))
+                        .push(self.render_button(
+                            String::from("Hard"),
+                            Message::NewGameStart(GameDifficulty::Hard),
+                        ))
+                        .spacing(5)
+                        .max_width(200),
                 )
                 .align_x(Alignment::Center)
                 .padding(padding::all(25))
@@ -223,6 +226,30 @@ impl MinesweeperInterface {
         }
 
         return board.into();
+    }
+
+    fn render_button(&self, text: String, message: Message) -> Element<Message> {
+        return MouseArea::new(
+            Container::new(
+                Container::new(
+                    Container::new(
+                        Text::new(text)
+                            .align_x(Alignment::Center)
+                            .width(Length::Fill)
+                            .size(11),
+                    )
+                    .style(ContainerStyles::button_container)
+                    .padding(5),
+                )
+                .style(ContainerStyles::button_container_bottom_right)
+                .padding(padding::bottom(Self::BORDER_PADDING).right(Self::BORDER_PADDING)),
+            )
+            .style(ContainerStyles::button_container_top_left)
+            .padding(padding::top(Self::BORDER_PADDING).left(Self::BORDER_PADDING)),
+        )
+        .interaction(Interaction::Pointer)
+        .on_release(message)
+        .into();
     }
 
     fn render_wrapper_container<'a, Message>(

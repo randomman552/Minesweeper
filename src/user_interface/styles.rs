@@ -1,31 +1,81 @@
-use iced::{widget::container, Background, Color, Theme};
+use iced::{
+    border,
+    widget::{button, container, MouseArea},
+    Background, Border, Color, Shadow, Theme,
+};
 
+/// Struct containing styles for [container]
 pub struct ContainerStyles {}
 impl ContainerStyles {
+    /// Container style for the top level game container
     pub fn game_container(_: &Theme) -> container::Style {
         container::Style {
-            background: Some(Background::Color(Color::from_rgb(0.75, 0.75, 0.75))),
+            background: Some(Background::Color(Color::from_rgb8(191, 191, 191))),
             ..Default::default()
         }
     }
 
+    /// Container style for wrapper containers
+    ///
+    /// Surrounds element with borders similar to class minesweeper
+    ///
+    /// This style provides the background
     pub fn wrapper_container(_: &Theme) -> container::Style {
         container::Style {
-            background: Some(Background::Color(Color::from_rgb(0.3, 0.3, 0.3))),
+            background: Some(Background::Color(Color::from_rgb8(76, 76, 76))),
             ..Default::default()
         }
     }
 
+    /// Container style for wrapper containers
+    ///
+    /// Surrounds element with borders similar to class minesweeper
+    ///
+    /// This style provides the top left border
     pub fn wrapper_container_top_left(_: &Theme) -> container::Style {
         container::Style {
-            background: Some(Background::Color(Color::from_rgb(0.5, 0.5, 0.5))),
+            background: Some(Background::Color(Color::from_rgb8(127, 127, 127))),
             ..Default::default()
         }
     }
 
+    /// Container style for wrapper containers
+    ///
+    /// Surrounds element with borders similar to class minesweeper
+    ///
+    /// This style provides the bottom right border
     pub fn wrapper_container_bottom_right(_: &Theme) -> container::Style {
         container::Style {
-            background: Some(Background::Color(Color::from_rgb(1.0, 1.0, 1.0))),
+            background: Some(Background::Color(Color::from_rgb8(255, 255, 255))),
+            ..Default::default()
+        }
+    }
+
+    /// Container style for a windows 95 style bevelled button
+    pub fn button_container(_: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color::from_rgb8(191, 191, 191))),
+            text_color: Some(Color::from_rgb8(0, 0, 0)),
+            ..Default::default()
+        }
+    }
+
+    /// Container style for a windows 95 style bevelled button
+    ///
+    /// This is the top left border style
+    pub fn button_container_top_left(_: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color::from_rgb8(255, 255, 255))),
+            ..Default::default()
+        }
+    }
+
+    /// Container style for a windows 95 style bevelled button
+    ///
+    /// This is the bottom right border style
+    pub fn button_container_bottom_right(_: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color::from_rgb8(127, 127, 127))),
             ..Default::default()
         }
     }

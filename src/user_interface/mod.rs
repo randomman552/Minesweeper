@@ -365,6 +365,7 @@ impl MinesweeperInterface {
         let cell_content = match field_state {
             FieldState::Unknown => image(&self.assets.closed),
             FieldState::Flagged => image(&self.assets.flag),
+            FieldState::Question => image(&self.assets.question_closed),
             FieldState::MineRevealed => image(&self.assets.mine),
             FieldState::MineDefused => image(&self.assets.mine_defused),
             FieldState::MineDetonated => image(&self.assets.mine_detonated),

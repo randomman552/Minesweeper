@@ -42,6 +42,7 @@ pub enum FieldState {
     MineDetonated,
     Open(u8),
     Flagged,
+    Question,
 }
 
 /// Minesweeper game implementation
@@ -52,6 +53,7 @@ pub struct Minesweeper {
     pub game_state: GameState,
     opened: HashSet<Position>,
     flagged: HashSet<Position>,
+    question: HashSet<Position>,
     mines: HashSet<Position>,
 }
 
@@ -62,6 +64,7 @@ impl Minesweeper {
             height,
             opened: HashSet::new(),
             flagged: HashSet::new(),
+            question: HashSet::new(),
             mines: {
                 let mut mines = HashSet::new();
                 let mut rng = rand::rng();
@@ -91,6 +94,10 @@ impl Minesweeper {
         self.flagged.contains(&pos)
     }
 
+    pub fn is_question(&self, pos: Position) -> bool {
+        self.question.contains(&pos)
+    }
+
     pub fn is_in_bounds(&self, pos: Position) -> bool {
         pos.0 < self.width && pos.1 < self.height
     }
@@ -104,7 +111,7 @@ impl Minesweeper {
             }
 
             if self.game_state == GameState::Loss {
-                if (self.is_flagged(pos)) {
+                if self.is_flagged(pos) {
                     return FieldState::MineDefused;
                 }
                 return FieldState::MineRevealed;
@@ -118,6 +125,11 @@ impl Minesweeper {
         // Show flagged field
         if self.is_flagged(pos) {
             return FieldState::Flagged;
+        }
+
+        // Show question field
+        if self.is_question(pos) {
+            return FieldState::Question;
         }
 
         // Show open field
@@ -187,7 +199,11 @@ impl Minesweeper {
 
     pub fn open(&mut self, pos: Position) -> Option<OpenResult> {
         // Skip the position if the field is flagged
-        if self.is_flagged(pos) || self.is_open(pos) || self.game_state == GameState::Loss {
+        if self.is_flagged(pos)
+            || self.is_question(pos)
+            || self.is_open(pos)
+            || self.game_state == GameState::Loss
+        {
             return None;
         }
         // Skip the position if the field is out of bounds
@@ -231,6 +247,9 @@ impl Minesweeper {
 
         if self.is_flagged(pos) {
             self.flagged.remove(&pos);
+            self.question.insert(pos);
+        } else if self.is_question(pos) {
+            self.question.remove(&pos);
         } else {
             self.flagged.insert(pos);
             self.check_game_state();

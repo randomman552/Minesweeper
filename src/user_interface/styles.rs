@@ -1,8 +1,4 @@
-use iced::{
-    border,
-    widget::{button, container, MouseArea},
-    Background, Border, Color, Shadow, Theme,
-};
+use iced::{widget::container, Background, Color, Theme};
 
 /// Struct containing styles for [container]
 pub struct ContainerStyles {}

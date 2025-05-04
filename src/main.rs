@@ -1,7 +1,7 @@
 mod minesweeper;
 mod user_interface;
 
-use iced::{Font, Size};
+use iced::Font;
 use user_interface::*;
 
 fn main() -> iced::Result {

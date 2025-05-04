@@ -11,7 +11,7 @@ use assets::MinesweeperAssets;
 use iced::{
     mouse::{self, Interaction},
     padding, time,
-    widget::{image, Button, Column, Container, Image, MouseArea, Row, Text},
+    widget::{image, Column, Container, Image, MouseArea, Row, Text},
     window::{self},
     Alignment, Element, Length, Size, Subscription, Task,
 };

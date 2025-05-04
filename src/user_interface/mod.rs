@@ -10,8 +10,9 @@ use crate::minesweeper::*;
 use assets::MinesweeperAssets;
 use iced::{
     mouse, padding, time,
-    widget::{image, Column, Container, Image, MouseArea, Row},
-    window, Alignment, Element, Length, Size, Subscription,
+    widget::{image, Button, Column, Container, Image, MouseArea, Row, Text},
+    window::{self, resize},
+    Alignment, Element, Length, Size, Subscription, Task,
 };
 use styles::ContainerStyles;
 
@@ -19,19 +20,28 @@ use styles::ContainerStyles;
 pub enum Message {
     NewGamePressed,
     NewGameReleased,
-    NewGameStart,
+    NewGameOpenMenu,
+    NewGameStart(GameDifficulty),
     OpenPressed,
     OpenReleased,
     Open(Position),
     Flag(Position),
     Tick(Instant),
-    Resize,
+}
+
+/// Enum representing possible game difficulties
+#[derive(Debug, Clone, Copy)]
+pub enum GameDifficulty {
+    Easy,
+    Medium,
+    Hard,
 }
 
 #[derive(Debug)]
 pub struct MinesweeperInterface {
     face_pressed: bool,
     open_pressed: bool,
+    show_new_game_menu: bool,
     game: Minesweeper,
     assets: MinesweeperAssets,
     timer: usize,
@@ -43,9 +53,10 @@ impl Default for MinesweeperInterface {
         Self {
             face_pressed: false,
             open_pressed: false,
+            show_new_game_menu: false,
             timer: 0,
             timer_enabled: false,
-            game: Minesweeper::new(10, 10, 10),
+            game: Minesweeper::new(9, 9, 10),
             assets: Default::default(),
         }
     }
@@ -58,17 +69,6 @@ impl MinesweeperInterface {
     const SCALE_FACTOR: u16 = 2;
 
     pub fn view(&self) -> Element<Message> {
-        // Build the game board
-        let mut board = Column::new();
-        for y in 0..self.game.height {
-            let mut row = Row::new();
-            for x in 0..self.game.width {
-                // Create a cell for each game grid cell
-                row = row.push(self.render_field(x, y));
-            }
-            board = board.push(row);
-        }
-
         // Layout in a column
         return Container::new(
             Column::new()
@@ -83,7 +83,7 @@ impl MinesweeperInterface {
                     ),
                 )
                 // Game board
-                .push(self.render_wrapper_container(board.into()))
+                .push(self.render_wrapper_container(self.render_board()))
                 .spacing(Self::EDGE_PADDING)
                 .align_x(Alignment::Center),
         )
@@ -92,7 +92,7 @@ impl MinesweeperInterface {
         .into();
     }
 
-    pub fn update(&mut self, message: Message) {
+    pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             // Field open logic
             Message::Open(pos) => {
@@ -130,12 +130,24 @@ impl MinesweeperInterface {
             Message::NewGameReleased => {
                 self.face_pressed = false;
             }
-            Message::NewGameStart => {
+            Message::NewGameOpenMenu => {
+                self.show_new_game_menu = true;
                 self.face_pressed = false;
                 self.timer_enabled = false;
                 self.timer = 0;
-                self.game = Minesweeper::new(10, 10, 10);
-                println!("Starting new game");
+            }
+            Message::NewGameStart(difficulty) => {
+                self.show_new_game_menu = false;
+                self.game = match difficulty {
+                    GameDifficulty::Easy => Minesweeper::new(9, 9, 10),
+                    GameDifficulty::Medium => Minesweeper::new(16, 16, 40),
+                    GameDifficulty::Hard => Minesweeper::new(30, 16, 99),
+                };
+                println!("Starting new game with difficulty {:?}", difficulty);
+
+                // Return re-size task
+                let size = self.calculate_size();
+                return window::get_latest().and_then(move |id| window::resize(id, size));
             }
 
             // Timer logic
@@ -144,12 +156,9 @@ impl MinesweeperInterface {
                     self.timer += 1;
                 }
             }
-
-            // Resize logic
-            Message::Resize => {
-                self.resize();
-            }
         }
+
+        return Task::none();
     }
 
     pub fn title(&self) -> String {
@@ -162,11 +171,6 @@ impl MinesweeperInterface {
 
     pub fn scale_factor(&self) -> f64 {
         return Self::SCALE_FACTOR.into();
-    }
-
-    pub fn resize(&self) {
-        let size = self.calculate_size();
-        let _ = window::get_latest().map(move |id| window::resize::<Message>(id.unwrap(), size));
     }
 
     pub fn calculate_size(&self) -> Size {
@@ -182,6 +186,43 @@ impl MinesweeperInterface {
             (width * Self::SCALE_FACTOR).into(),
             (height * Self::SCALE_FACTOR).into(),
         );
+    }
+
+    fn render_board(&self) -> Element<Message> {
+        // Build the game board
+        let mut board = Column::new().height(Length::Fill).width(Length::Fill);
+
+        if self.show_new_game_menu {
+            board = board
+                .push(
+                    Button::new(Text::new("Easy").width(Length::Fill).center())
+                        .on_press(Message::NewGameStart(GameDifficulty::Easy))
+                        .width(200),
+                )
+                .push(
+                    Button::new(Text::new("Medium").width(Length::Fill).center())
+                        .on_press(Message::NewGameStart(GameDifficulty::Medium))
+                        .width(200),
+                )
+                .push(
+                    Button::new(Text::new("Hard").width(Length::Fill).center())
+                        .on_press(Message::NewGameStart(GameDifficulty::Hard))
+                        .width(200),
+                )
+                .align_x(Alignment::Center)
+                .padding(padding::all(25))
+        } else {
+            for y in 0..self.game.height {
+                let mut row = Row::new();
+                for x in 0..self.game.width {
+                    // Create a cell for each game grid cell
+                    row = row.push(self.render_field(x, y));
+                }
+                board = board.push(row);
+            }
+        }
+
+        return board.into();
     }
 
     fn render_wrapper_container<'a, Message>(
@@ -281,7 +322,7 @@ impl MinesweeperInterface {
                 MouseArea::new(Container::new(face_image))
                     .interaction(mouse::Interaction::Pointer)
                     .on_press(Message::NewGamePressed)
-                    .on_release(Message::NewGameStart)
+                    .on_release(Message::NewGameOpenMenu)
                     .on_exit(Message::NewGameReleased),
             )
             .align_x(Alignment::Center)

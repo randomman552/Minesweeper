@@ -91,12 +91,12 @@ impl Default for MinesweeperAssets {
             mine: image::Handle::from_bytes(
                 include_bytes!("../../resources/images/field/mine.png").as_slice(),
             ),
-            // question_closed: image::Handle::from_bytes(
-            //     include_bytes!("../../resources/images/field/question_closed.png").as_slice(),
-            // ),
-            question_open: image::Handle::from_bytes(
-                include_bytes!("../../resources/images/field/question_open.png").as_slice(),
+            question_closed: image::Handle::from_bytes(
+                include_bytes!("../../resources/images/field/question_closed.png").as_slice(),
             ),
+            // question_open: image::Handle::from_bytes(
+            //     include_bytes!("../../resources/images/field/question_open.png").as_slice(),
+            // ),
 
             //#endregion
 

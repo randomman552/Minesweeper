@@ -2,6 +2,11 @@ use iced::widget::image;
 
 #[derive(Debug)]
 pub struct MinesweeperAssets {
+    // #region Global assets
+    pub application_icon: &'static [u8],
+
+    // #endregion
+
     // #region Field tiles
     pub field0: image::Handle,
     pub field1: image::Handle,
@@ -48,6 +53,8 @@ pub struct MinesweeperAssets {
 impl Default for MinesweeperAssets {
     fn default() -> Self {
         Self {
+            application_icon: include_bytes!("../../resources/icons/icon.png"),
+
             // #region Field tiles
             field0: image::Handle::from_bytes(
                 include_bytes!("../../resources/images/field/0.png").as_slice(),
@@ -97,7 +104,6 @@ impl Default for MinesweeperAssets {
             question_open: image::Handle::from_bytes(
                 include_bytes!("../../resources/images/field/question_open.png").as_slice(),
             ),
-
             //#endregion
 
             //#region Score indicators

@@ -1,4 +1,4 @@
-mod assets;
+pub mod assets;
 mod styles;
 
 use std::{

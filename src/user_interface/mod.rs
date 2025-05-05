@@ -2,6 +2,7 @@ pub mod assets;
 mod styles;
 
 use std::{
+    ops::Deref,
     time::{Duration, Instant},
     usize,
 };
@@ -11,13 +12,13 @@ use assets::MinesweeperAssets;
 use iced::{
     mouse::{self, Interaction},
     padding, time,
-    widget::{image, Column, Container, Image, MouseArea, Row, Text},
+    widget::{container, image, Column, Container, Image, MouseArea, Row, Text},
     window::{self},
-    Alignment, Element, Length, Size, Subscription, Task,
+    Alignment, Element, Length, Size, Subscription, Task, Theme,
 };
 use styles::ContainerStyles;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Message {
     NewGamePressed,
     NewGameReleased,
@@ -25,6 +26,8 @@ pub enum Message {
     NewGameStart(GameDifficulty),
     OpenPressed,
     OpenReleased,
+    CustomButtonPressed(String),
+    CustomButtonReleased(Box<Option<Self>>),
     Open(Position),
     Flag(Position),
     Tick(Instant),
@@ -47,6 +50,8 @@ pub struct MinesweeperInterface {
     assets: MinesweeperAssets,
     timer: usize,
     timer_enabled: bool,
+    hovered_button_id: Option<String>,
+    pressed_button_id: Option<String>,
 }
 
 impl Default for MinesweeperInterface {
@@ -59,6 +64,8 @@ impl Default for MinesweeperInterface {
             timer_enabled: false,
             game: Minesweeper::new(9, 9, 10),
             assets: Default::default(),
+            hovered_button_id: None,
+            pressed_button_id: None,
         }
     }
 }
@@ -151,6 +158,19 @@ impl MinesweeperInterface {
                 return window::get_latest().and_then(move |id| window::resize(id, size));
             }
 
+            // Custom button logic
+            Message::CustomButtonPressed(id) => {
+                self.pressed_button_id = Some(id);
+            }
+            Message::CustomButtonReleased(message_box) => {
+                self.pressed_button_id = None;
+                let message = message_box.deref().to_owned();
+
+                if message.is_some() {
+                    return Task::perform(async {}, move |_| message.clone().unwrap());
+                }
+            }
+
             // Timer logic
             Message::Tick(_) => {
                 if self.timer_enabled && self.game.game_state == GameState::InProgress {
@@ -198,14 +218,17 @@ impl MinesweeperInterface {
                 .push(
                     Column::new()
                         .push(self.render_button(
+                            String::from("easy-button"),
                             String::from("Easy"),
                             Message::NewGameStart(GameDifficulty::Easy),
                         ))
                         .push(self.render_button(
+                            String::from("medium-button"),
                             String::from("Medium"),
                             Message::NewGameStart(GameDifficulty::Medium),
                         ))
                         .push(self.render_button(
+                            String::from("hard-button"),
                             String::from("Hard"),
                             Message::NewGameStart(GameDifficulty::Hard),
                         ))
@@ -228,7 +251,23 @@ impl MinesweeperInterface {
         return board.into();
     }
 
-    fn render_button(&self, text: String, message: Message) -> Element<Message> {
+    fn render_button(&self, id: String, text: String, message: Message) -> Element<Message> {
+        let mut button_container_style: Box<dyn Fn(&Theme) -> container::Style> =
+            Box::new(ContainerStyles::button_container);
+        let mut button_container_top_left_style: Box<dyn Fn(&Theme) -> container::Style> =
+            Box::new(ContainerStyles::button_container_top_left);
+        let mut button_container_bottom_right_style: Box<dyn Fn(&Theme) -> container::Style> =
+            Box::new(ContainerStyles::button_container_bottom_right);
+
+        // Change style if button pressed
+        if self.pressed_button_id == Some(id.clone()) {
+            button_container_style = Box::new(ContainerStyles::button_container_pressed);
+            button_container_top_left_style =
+                Box::new(ContainerStyles::button_container_top_left_pressed);
+            button_container_bottom_right_style =
+                Box::new(ContainerStyles::button_container_bottom_right_pressed);
+        }
+
         return MouseArea::new(
             Container::new(
                 Container::new(
@@ -238,17 +277,19 @@ impl MinesweeperInterface {
                             .width(Length::Fill)
                             .size(11),
                     )
-                    .style(ContainerStyles::button_container)
+                    .style(button_container_style)
                     .padding(5),
                 )
-                .style(ContainerStyles::button_container_bottom_right)
+                .style(button_container_bottom_right_style)
                 .padding(padding::bottom(Self::BORDER_PADDING).right(Self::BORDER_PADDING)),
             )
-            .style(ContainerStyles::button_container_top_left)
+            .style(button_container_top_left_style)
             .padding(padding::top(Self::BORDER_PADDING).left(Self::BORDER_PADDING)),
         )
         .interaction(Interaction::Pointer)
-        .on_release(message)
+        .on_press(Message::CustomButtonPressed(id.clone()))
+        .on_release(Message::CustomButtonReleased(Box::new(Some(message))))
+        .on_exit(Message::CustomButtonReleased(Box::new(None)))
         .into();
     }
 

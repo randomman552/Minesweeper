@@ -75,4 +75,33 @@ impl ContainerStyles {
             ..Default::default()
         }
     }
+
+    /// Container style for a windows 95 style bevelled button being pressed
+    pub fn button_container_pressed(_: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color::from_rgb8(127, 127, 127))),
+            text_color: Some(Color::from_rgb8(0, 0, 0)),
+            ..Default::default()
+        }
+    }
+
+    /// Container style for a windows 95 style bevelled button being pressed
+    ///
+    /// This is the top left border style
+    pub fn button_container_top_left_pressed(_: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color::from_rgb8(127, 127, 127))),
+            ..Default::default()
+        }
+    }
+
+    /// Container style for a windows 95 style bevelled button being pressed
+    ///
+    /// This is the bottom right border style
+    pub fn button_container_bottom_right_pressed(_: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color::from_rgb8(127, 127, 127))),
+            ..Default::default()
+        }
+    }
 }

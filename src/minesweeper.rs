@@ -164,7 +164,10 @@ impl Minesweeper {
 
     /// Get the remaining number of mines (according to the player)
     pub fn remaining_mines(&self) -> usize {
-        return self.mines.len() - self.flagged.len();
+        if self.mines.len() > self.flagged.len() {
+            return self.mines.len() - self.flagged.len();
+        }
+        return self.flagged.len() - self.mines.len();
     }
 
     // endregion

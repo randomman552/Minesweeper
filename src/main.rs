@@ -1,4 +1,5 @@
 mod minesweeper;
+mod solver;
 mod user_interface;
 
 use iced::{

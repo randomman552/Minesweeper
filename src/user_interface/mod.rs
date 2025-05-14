@@ -7,7 +7,7 @@ use std::{
     usize,
 };
 
-use crate::minesweeper::*;
+use crate::{minesweeper::*, solver::Solver};
 use assets::MinesweeperAssets;
 use iced::{
     mouse::{self, Interaction},
@@ -47,6 +47,7 @@ pub struct MinesweeperInterface {
     open_pressed: bool,
     show_new_game_menu: bool,
     game: Minesweeper,
+    solver: Solver,
     assets: MinesweeperAssets,
     timer: usize,
     timer_enabled: bool,
@@ -63,6 +64,7 @@ impl Default for MinesweeperInterface {
             timer: 0,
             timer_enabled: false,
             game: Minesweeper::new(9, 9, 10),
+            solver: Solver::new(),
             assets: Default::default(),
             hovered_button_id: None,
             pressed_button_id: None,
@@ -151,6 +153,7 @@ impl MinesweeperInterface {
                     GameDifficulty::Medium => Minesweeper::new(16, 16, 40),
                     GameDifficulty::Hard => Minesweeper::new(30, 16, 99),
                 };
+                self.solver = Solver::new();
                 println!("Starting new game with difficulty {:?}", difficulty);
 
                 // Return re-size task

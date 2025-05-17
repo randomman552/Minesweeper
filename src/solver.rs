@@ -190,7 +190,11 @@ impl Solver {
 
         // If already open, chance is 0
         if game.is_open(pos) {
-            return MineChance::WithInformation(0.0);
+            // Don't return 0 if the field is mined
+            // So we can review why the sovler lost the game
+            if !game.is_mined(pos) {
+                return MineChance::WithInformation(0.0);
+            }
         }
 
         // If flagged, chance is 100%
@@ -206,8 +210,9 @@ impl Solver {
         // Iterate over all neighbors
         let mut guess_chance: Vec<f32> = Vec::new();
         for neighbor in neighbors {
-            // We can only evaluate a neighbor if it is open, no cheating!
-            if game.is_open(neighbor) {
+            // We can only evaluate a neighbor if it is open
+            // The is_mined check here is only useful in the case that a mine has already been revealed, so it's not cheating!
+            if game.is_open(neighbor) && !game.is_mined(neighbor) {
                 // Look for neighbors that only have the exact number of times surrounding them as mines
                 // Means this tile is guaranteed to be a mineif game.is_open(neighbor) {
                 let mine_count = game.neighboring_mines(neighbor);

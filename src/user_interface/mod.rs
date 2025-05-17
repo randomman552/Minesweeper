@@ -7,7 +7,10 @@ use std::{
     usize,
 };
 
-use crate::{minesweeper::*, solver::Solver};
+use crate::{
+    minesweeper::*,
+    solver::{Solver, SolverStep},
+};
 use assets::MinesweeperAssets;
 use iced::{
     event,
@@ -37,6 +40,7 @@ pub enum Message {
     Tick(Instant),
     ShowMineChance,
     HideMineChance,
+    SolveStep,
 }
 
 /// Enum representing possible game difficulties
@@ -111,7 +115,19 @@ impl MinesweeperInterface {
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
-        self.solver.solve_step(&self.game);
+        if let Message::Ignore = message {
+            return Task::none();
+        }
+
+        if let Message::Tick(instant) = message {
+            if self.timer_enabled && self.game.game_state == GameState::InProgress {
+                log::trace!("Timer tick - {:?}", instant);
+                self.timer += 1;
+            }
+            return Task::none();
+        }
+
+        let solve_step = self.solver.solve_step(&self.game);
 
         match message {
             // Field open logic
@@ -190,14 +206,6 @@ impl MinesweeperInterface {
                 }
             }
 
-            // Timer logic
-            Message::Tick(_) => {
-                if self.timer_enabled && self.game.game_state == GameState::InProgress {
-                    log::trace!("Timer tick");
-                    self.timer += 1;
-                }
-            }
-
             // Game solver related
             Message::ShowMineChance => {
                 if !self.show_mine_chance {
@@ -210,6 +218,16 @@ impl MinesweeperInterface {
                     self.show_mine_chance = false;
                     log::info!("Hiding solver mine chance");
                 }
+            }
+            Message::SolveStep => {
+                info!("Running solver step '{}'", solve_step);
+                let message = match solve_step {
+                    SolverStep::Flag(pos) => Message::Flag(pos),
+                    SolverStep::Open(pos) => Message::Open(pos),
+                    SolverStep::None => Message::Ignore,
+                };
+
+                return Task::perform(async {}, move |_| message.clone());
             }
 
             // Ignore any other messages
@@ -243,6 +261,14 @@ impl MinesweeperInterface {
                         location: _,
                         modifiers: _,
                     } => Message::HideMineChance,
+                    keyboard::Event::KeyPressed {
+                        key: Key::Named(Named::Enter),
+                        location: _,
+                        modified_key: _,
+                        modifiers: _,
+                        physical_key: _,
+                        text: _,
+                    } => Message::SolveStep,
                     _ => Message::Ignore,
                 },
                 _ => Message::Ignore,

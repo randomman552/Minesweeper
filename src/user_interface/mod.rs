@@ -10,16 +10,19 @@ use std::{
 use crate::{minesweeper::*, solver::Solver};
 use assets::MinesweeperAssets;
 use iced::{
+    event,
+    keyboard::{self, key::Named, Key},
     mouse::{self, Interaction},
-    overlay, padding, time,
+    padding, time,
     widget::{container, image, tooltip, Column, Container, Image, MouseArea, Row, Text},
     window::{self},
-    Alignment, Color, Element, Length, Size, Subscription, Task, Theme,
+    Alignment, Color, Element, Event, Length, Size, Subscription, Task, Theme,
 };
 use styles::ContainerStyles;
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Ignore,
     NewGamePressed,
     NewGameReleased,
     NewGameOpenMenu,
@@ -31,6 +34,8 @@ pub enum Message {
     Open(Position),
     Flag(Position),
     Tick(Instant),
+    ShowMineChance,
+    HideMineChance,
 }
 
 /// Enum representing possible game difficulties
@@ -53,6 +58,7 @@ pub struct MinesweeperInterface {
     timer_enabled: bool,
     hovered_button_id: Option<String>,
     pressed_button_id: Option<String>,
+    show_mine_chance: bool,
 }
 
 impl Default for MinesweeperInterface {
@@ -68,6 +74,7 @@ impl Default for MinesweeperInterface {
             assets: Default::default(),
             hovered_button_id: None,
             pressed_button_id: None,
+            show_mine_chance: false,
         }
     }
 }
@@ -182,6 +189,17 @@ impl MinesweeperInterface {
                     self.timer += 1;
                 }
             }
+
+            // Game solver related
+            Message::ShowMineChance => {
+                self.show_mine_chance = true;
+            }
+            Message::HideMineChance => {
+                self.show_mine_chance = false;
+            }
+
+            // Ignore any other messages
+            _ => {}
         }
 
         return Task::none();
@@ -192,7 +210,30 @@ impl MinesweeperInterface {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        time::every(Duration::from_secs(1)).map(Message::Tick)
+        Subscription::batch(vec![
+            // Timer
+            time::every(Duration::from_secs(1)).map(Message::Tick),
+            // Keyboard events
+            event::listen().map(|event| match event {
+                Event::Keyboard(keyboard_event) => match keyboard_event {
+                    keyboard::Event::KeyPressed {
+                        key: Key::Named(Named::Alt),
+                        location: _,
+                        modified_key: _,
+                        modifiers: _,
+                        physical_key: _,
+                        text: _,
+                    } => Message::ShowMineChance,
+                    keyboard::Event::KeyReleased {
+                        key: Key::Named(Named::Alt),
+                        location: _,
+                        modifiers: _,
+                    } => Message::HideMineChance,
+                    _ => Message::Ignore,
+                },
+                _ => Message::Ignore,
+            }),
+        ])
     }
 
     pub fn scale_factor(&self) -> f64 {
@@ -439,14 +480,18 @@ impl MinesweeperInterface {
             .interaction(mouse::Interaction::Pointer)
             .into();
 
-        // Add tooltip on solver mine chance
-        let mine_chance = self.solver.get_mine_chance(pos) * 100.0;
-        let mine_chance_string = mine_chance.to_string() + "%";
-        return tooltip(
-            field,
-            Text::new(mine_chance_string).color(Color::BLACK),
-            tooltip::Position::Top,
-        )
-        .into();
+        // Add tooltip if mine chance enabled
+        if self.show_mine_chance {
+            let mine_chance = self.solver.get_mine_chance(pos);
+            let mine_chance_string = format!("{}", mine_chance);
+            return tooltip(
+                field,
+                Text::new(mine_chance_string).color(Color::BLACK),
+                tooltip::Position::Bottom,
+            )
+            .into();
+        }
+
+        return field;
     }
 }

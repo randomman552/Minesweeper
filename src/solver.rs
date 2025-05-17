@@ -51,14 +51,18 @@ impl Solver {
     }
 
     pub fn solve_step(&mut self, game: &Minesweeper) -> SolverStep {
+        if game.game_state != GameState::InProgress {
+            return SolverStep::None;
+        }
+
         self.calculate_field(game);
 
         // Default action is to do nothing
         let mut action = SolverStep::None;
         let mut best_guess: Option<Position> = None;
 
+        // Logic for fields with concerete information
         for (pos, chance) in self.field.clone() {
-            // Logic for fields with concerete information
             if let MineChance::WithInformation(probability) = chance {
                 // Flag any fields with 100% chance that are not already flagged
                 if probability >= 1.0 && !game.is_flagged(pos) {
@@ -103,8 +107,23 @@ impl Solver {
                     }
                 }
             }
-            // Logic for fields without concrete information
+        }
+
+        // Logic for fields without concrete information
+        // These take lower priority compared to those with information
+        for (pos, chance) in self.field.clone() {
             if let MineChance::NoInformation(probability) = chance {
+                // Flag any fields with 100% chance that are not already flagged
+                if probability >= 1.0 && !game.is_flagged(pos) {
+                    log::info!(
+                        "Solver suggests flagging field ({}, {}), guaranteed mine",
+                        pos.0,
+                        pos.1
+                    );
+                    action = SolverStep::Flag(pos);
+                    break;
+                }
+
                 // Open any fields with 0% chance
                 if probability <= 0.0 && !game.is_open(pos) {
                     log::info!(
@@ -117,7 +136,6 @@ impl Solver {
                 }
 
                 // Is this better than the current best guess?
-                // Take lower priority than guesses with information
                 if !game.is_open(pos) && !game.is_flagged(pos) {
                     if best_guess.is_some() {
                         let guess_pos = best_guess.unwrap();
@@ -139,10 +157,12 @@ impl Solver {
         // We must guess!
         if best_guess.is_some() && action == SolverStep::None {
             let pos = best_guess.unwrap();
+            let chance = self.get_mine_chance(pos);
             log::info!(
-                "Solver suggests opening field ({}, {}), best safe guess",
+                "Solver suggests opening field ({}, {}), best safe guess with chance {}",
                 pos.0,
-                pos.1
+                pos.1,
+                chance
             );
             action = SolverStep::Open(pos);
         }

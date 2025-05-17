@@ -7,19 +7,26 @@ use std::{
     usize,
 };
 
-use crate::minesweeper::*;
+use crate::{
+    minesweeper::*,
+    solver::{Solver, SolverStep},
+};
 use assets::MinesweeperAssets;
 use iced::{
+    event,
+    keyboard::{self, key::Named, Key},
     mouse::{self, Interaction},
     padding, time,
-    widget::{container, image, Column, Container, Image, MouseArea, Row, Text},
+    widget::{container, image, tooltip, Column, Container, Image, MouseArea, Row, Text},
     window::{self},
-    Alignment, Element, Length, Size, Subscription, Task, Theme,
+    Alignment, Color, Element, Event, Length, Size, Subscription, Task, Theme,
 };
+use log::info;
 use styles::ContainerStyles;
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Ignore,
     NewGamePressed,
     NewGameReleased,
     NewGameOpenMenu,
@@ -31,6 +38,9 @@ pub enum Message {
     Open(Position),
     Flag(Position),
     Tick(Instant),
+    ShowMineChance,
+    HideMineChance,
+    SolveStep,
 }
 
 /// Enum representing possible game difficulties
@@ -47,11 +57,13 @@ pub struct MinesweeperInterface {
     open_pressed: bool,
     show_new_game_menu: bool,
     game: Minesweeper,
+    solver: Solver,
     assets: MinesweeperAssets,
     timer: usize,
     timer_enabled: bool,
     hovered_button_id: Option<String>,
     pressed_button_id: Option<String>,
+    show_mine_chance: bool,
 }
 
 impl Default for MinesweeperInterface {
@@ -63,9 +75,11 @@ impl Default for MinesweeperInterface {
             timer: 0,
             timer_enabled: false,
             game: Minesweeper::new(9, 9, 10),
+            solver: Solver::new(),
             assets: Default::default(),
             hovered_button_id: None,
             pressed_button_id: None,
+            show_mine_chance: false,
         }
     }
 }
@@ -101,6 +115,20 @@ impl MinesweeperInterface {
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
+        if let Message::Ignore = message {
+            return Task::none();
+        }
+
+        if let Message::Tick(instant) = message {
+            if self.timer_enabled && self.game.game_state == GameState::InProgress {
+                log::trace!("Timer tick - {:?}", instant);
+                self.timer += 1;
+            }
+            return Task::none();
+        }
+
+        let solve_step = self.solver.solve_step(&self.game);
+
         match message {
             // Field open logic
             Message::Open(pos) => {
@@ -108,8 +136,8 @@ impl MinesweeperInterface {
                 self.timer_enabled = true;
                 self.open_pressed = false;
                 if !result.is_none() {
-                    println!(
-                        "Open '({}, {})' with result '{}'",
+                    log::info!(
+                        "Opened '({}, {})' with result '{}'",
                         pos.0,
                         pos.1,
                         result.unwrap()
@@ -128,7 +156,7 @@ impl MinesweeperInterface {
                 self.game.flag(pos);
                 self.timer_enabled = true;
                 self.open_pressed = false;
-                println!("Flag '({}, {})'", pos.0, pos.1);
+                log::info!("Flagged '({}, {})'", pos.0, pos.1);
             }
 
             // New game logic
@@ -143,6 +171,7 @@ impl MinesweeperInterface {
                 self.face_pressed = false;
                 self.timer_enabled = false;
                 self.timer = 0;
+                log::info!("Showing new game menu")
             }
             Message::NewGameStart(difficulty) => {
                 self.show_new_game_menu = false;
@@ -151,7 +180,8 @@ impl MinesweeperInterface {
                     GameDifficulty::Medium => Minesweeper::new(16, 16, 40),
                     GameDifficulty::Hard => Minesweeper::new(30, 16, 99),
                 };
-                println!("Starting new game with difficulty {:?}", difficulty);
+                self.solver = Solver::new();
+                log::info!("Starting new game with difficulty {:?}", difficulty);
 
                 // Return re-size task
                 let size = self.calculate_size();
@@ -160,9 +190,14 @@ impl MinesweeperInterface {
 
             // Custom button logic
             Message::CustomButtonPressed(id) => {
+                log::debug!("Custom button with id '{}' pressed", id);
                 self.pressed_button_id = Some(id);
             }
             Message::CustomButtonReleased(message_box) => {
+                log::debug!(
+                    "Custom button with id '{:?}' released",
+                    self.pressed_button_id
+                );
                 self.pressed_button_id = None;
                 let message = message_box.deref().to_owned();
 
@@ -171,12 +206,32 @@ impl MinesweeperInterface {
                 }
             }
 
-            // Timer logic
-            Message::Tick(_) => {
-                if self.timer_enabled && self.game.game_state == GameState::InProgress {
-                    self.timer += 1;
+            // Game solver related
+            Message::ShowMineChance => {
+                if !self.show_mine_chance {
+                    self.show_mine_chance = true;
+                    log::info!("Showing solver mine chance");
                 }
             }
+            Message::HideMineChance => {
+                if self.show_mine_chance {
+                    self.show_mine_chance = false;
+                    log::info!("Hiding solver mine chance");
+                }
+            }
+            Message::SolveStep => {
+                info!("Running solver step '{}'", solve_step);
+                let message = match solve_step {
+                    SolverStep::Flag(pos) => Message::Flag(pos),
+                    SolverStep::Open(pos) => Message::Open(pos),
+                    SolverStep::None => Message::Ignore,
+                };
+
+                return Task::perform(async {}, move |_| message.clone());
+            }
+
+            // Ignore any other messages
+            _ => {}
         }
 
         return Task::none();
@@ -187,7 +242,38 @@ impl MinesweeperInterface {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        time::every(Duration::from_secs(1)).map(Message::Tick)
+        Subscription::batch(vec![
+            // Timer
+            time::every(Duration::from_secs(1)).map(Message::Tick),
+            // Keyboard events
+            event::listen().map(|event| match event {
+                Event::Keyboard(keyboard_event) => match keyboard_event {
+                    keyboard::Event::KeyPressed {
+                        key: Key::Named(Named::Alt),
+                        location: _,
+                        modified_key: _,
+                        modifiers: _,
+                        physical_key: _,
+                        text: _,
+                    } => Message::ShowMineChance,
+                    keyboard::Event::KeyReleased {
+                        key: Key::Named(Named::Alt),
+                        location: _,
+                        modifiers: _,
+                    } => Message::HideMineChance,
+                    keyboard::Event::KeyPressed {
+                        key: Key::Named(Named::Enter),
+                        location: _,
+                        modified_key: _,
+                        modifiers: _,
+                        physical_key: _,
+                        text: _,
+                    } => Message::SolveStep,
+                    _ => Message::Ignore,
+                },
+                _ => Message::Ignore,
+            }),
+        ])
     }
 
     pub fn scale_factor(&self) -> f64 {
@@ -403,35 +489,49 @@ impl MinesweeperInterface {
         let field_state = self.game.get_field_state(pos);
 
         // Get the field content
-        let cell_content = match field_state {
-            FieldState::Unknown => image(&self.assets.closed),
-            FieldState::Flagged => image(&self.assets.flag),
-            FieldState::Question => image(&self.assets.question_closed),
-            FieldState::MineRevealed => image(&self.assets.mine),
-            FieldState::NoMine => image(&self.assets.mine_false),
-            FieldState::MineDetonated => image(&self.assets.mine_detonated),
+        let cell_content: Element<Message> = match field_state {
+            FieldState::Unknown => image(&self.assets.closed).into(),
+            FieldState::Flagged => image(&self.assets.flag).into(),
+            FieldState::Question => image(&self.assets.question_closed).into(),
+            FieldState::MineRevealed => image(&self.assets.mine).into(),
+            FieldState::NoMine => image(&self.assets.mine_false).into(),
+            FieldState::MineDetonated => image(&self.assets.mine_detonated).into(),
             FieldState::Open(count) => match count {
-                0 => image(&self.assets.field0),
-                1 => image(&self.assets.field1),
-                2 => image(&self.assets.field2),
-                3 => image(&self.assets.field3),
-                4 => image(&self.assets.field4),
-                5 => image(&self.assets.field5),
-                6 => image(&self.assets.field6),
-                7 => image(&self.assets.field7),
-                8 => image(&self.assets.field8),
+                0 => image(&self.assets.field0).into(),
+                1 => image(&self.assets.field1).into(),
+                2 => image(&self.assets.field2).into(),
+                3 => image(&self.assets.field3).into(),
+                4 => image(&self.assets.field4).into(),
+                5 => image(&self.assets.field5).into(),
+                6 => image(&self.assets.field6).into(),
+                7 => image(&self.assets.field7).into(),
+                8 => image(&self.assets.field8).into(),
                 _ => panic!("Mine count out of range 0 - 8"),
             },
         };
 
-        // Create the field (with interaction logic)
-        MouseArea::new(Container::new(cell_content))
+        // Create field content
+        let field: Element<Message> = MouseArea::new(Container::new(cell_content))
             .on_press(Message::OpenPressed)
             .on_right_press(Message::OpenPressed)
             .on_exit(Message::OpenReleased)
             .on_release(Message::Open(pos))
             .on_right_release(Message::Flag(pos))
             .interaction(mouse::Interaction::Pointer)
-            .into()
+            .into();
+
+        // Add tooltip if mine chance enabled
+        if self.show_mine_chance {
+            let mine_chance = self.solver.get_mine_chance(pos);
+            let mine_chance_string = format!("{}", mine_chance);
+            return tooltip(
+                field,
+                Text::new(mine_chance_string).color(Color::BLACK),
+                tooltip::Position::Bottom,
+            )
+            .into();
+        }
+
+        return field;
     }
 }

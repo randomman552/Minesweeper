@@ -164,7 +164,10 @@ impl Minesweeper {
 
     /// Get the remaining number of mines (according to the player)
     pub fn remaining_mines(&self) -> usize {
-        return self.mines.len() - self.flagged.len();
+        if self.mines.len() > self.flagged.len() {
+            return self.mines.len() - self.flagged.len();
+        }
+        return self.flagged.len() - self.mines.len();
     }
 
     // endregion
@@ -189,6 +192,12 @@ impl Minesweeper {
     pub fn neighboring_flags(&self, pos: Position) -> u8 {
         self.neighboring_fields_iter(pos)
             .filter(|pos| self.flagged.contains(pos))
+            .count() as u8
+    }
+
+    pub fn neighboring_closed_fields(&self, pos: Position) -> u8 {
+        self.neighboring_fields_iter(pos)
+            .filter(|pos| !self.is_open(*pos))
             .count() as u8
     }
 

@@ -1,16 +1,34 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::minesweeper::*;
 
+#[derive(Debug, Clone, Copy)]
 pub enum SolverStep {
     Open(u16, u16),
     Flag(u16, u16),
     None,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum MineChance {
+    WithInformation(f32),
+    NoInformation(f32),
+}
+
+impl Display for MineChance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MineChance::NoInformation(chance) => write!(f, "{:.0}%?", chance * 100.0)?,
+            MineChance::WithInformation(chance) => write!(f, "{:.0}%", chance * 100.0)?,
+        };
+
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 pub struct Solver {
-    field: HashMap<Position, f32>,
+    field: HashMap<Position, MineChance>,
 }
 
 impl Solver {
@@ -33,14 +51,14 @@ impl Solver {
     /// Get the probability (0-1) that the field with the given position is a mine
     ///
     /// Or 0 if not set
-    pub fn get_mine_chance(&self, pos: Position) -> f32 {
+    pub fn get_mine_chance(&self, pos: Position) -> MineChance {
         let chance = self.field.get(&pos);
 
         if chance.is_some() {
             return *chance.unwrap();
         }
 
-        return 0.0;
+        return MineChance::NoInformation(0.0);
     }
 
     // Calculate mine chance for every
@@ -59,23 +77,68 @@ impl Solver {
     }
 
     // Get the chance
-    fn calculate_mine_chance(&self, game: &Minesweeper, pos: Position) -> f32 {
+    fn calculate_mine_chance(&self, game: &Minesweeper, pos: Position) -> MineChance {
         // If not in bounds, chance is 0
         if !game.is_in_bounds(pos) {
-            return 0.0;
+            return MineChance::WithInformation(0.0);
         }
 
         // If already open, chance is 0
         if game.is_open(pos) {
-            return 0.0;
+            return MineChance::WithInformation(0.0);
         }
 
         // If flagged, chance is 100%
         if game.is_flagged(pos) {
-            return 1.0;
+            return MineChance::WithInformation(1.0);
         }
 
-        // TODO: More complicated calculations
-        return 0.0;
+        // Build a list of neighbors (that are within the game bounds)
+        let neighbors = game
+            .neighboring_fields_iter(pos)
+            .filter(|neighbor| game.is_in_bounds(*neighbor));
+
+        // Iterate over all neighbors
+        let mut guess_chance: Vec<f32> = Vec::new();
+        for neighbor in neighbors {
+            // We can only evaluate a neighbor if it is open, no cheating!
+            if game.is_open(neighbor) {
+                // Look for neighbors that only have the exact number of times surrounding them as mines
+                // Means this tile is guaranteed to be a mineif game.is_open(neighbor) {
+                let mine_count = game.neighboring_mines(neighbor);
+                let closed_field_count = game.neighboring_closed_fields(neighbor);
+                let flag_count = game.neighboring_flags(neighbor);
+
+                // If flag count is equal to the mine count, this tile cannot be mined
+                if mine_count == flag_count {
+                    return MineChance::WithInformation(0.0);
+                }
+
+                // If the mine count is equal to the closed field count, this field must be mined
+                if mine_count == closed_field_count {
+                    return MineChance::WithInformation(1.0);
+                }
+
+                // No guarantees, we must guess according to chance (if we can find no other option)
+                guess_chance.push(mine_count as f32 / closed_field_count as f32);
+            }
+        }
+
+        // If we have guess chance's, return the average of the guesses
+        if guess_chance.len() > 0 {
+            let sum: f32 = guess_chance.iter().sum();
+            let count = guess_chance.len();
+            if count == 0 {
+                return MineChance::WithInformation(0.0);
+            } else {
+                let avg = sum / count as f32;
+                return MineChance::WithInformation(avg);
+            }
+        }
+
+        // Otherwise, chance is the base chance of finding a mine in any field
+        return MineChance::NoInformation(
+            game.remaining_mines() as f32 / (game.width * game.height) as f32,
+        );
     }
 }

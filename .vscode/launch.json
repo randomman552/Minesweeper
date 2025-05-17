@@ -19,6 +19,9 @@
                     "kind": "bin"
                 }
             },
+            "env": {
+                "RUST_BACKTRACE": "1"
+            },
             "args": ["30"],
             "cwd": "${workspaceFolder}"
         },
@@ -37,6 +40,9 @@
                     "name": "minesweeper",
                     "kind": "bin"
                 }
+            },
+            "env": {
+                "RUST_BACKTRACE": "1"
             },
             "args": [],
             "cwd": "${workspaceFolder}"

@@ -58,6 +58,7 @@ impl Solver {
         let mut best_guess: Option<Position> = None;
 
         for (pos, chance) in self.field.clone() {
+            // Logic for fields with concerete information
             if let MineChance::WithInformation(probability) = chance {
                 // Flag any fields with 100% chance that are not already flagged
                 if probability >= 1.0 && !game.is_flagged(pos) {
@@ -89,6 +90,41 @@ impl Solver {
 
                         // Check probability of this guess would be lower than the current best guess
                         if let MineChance::WithInformation(guess_probability) = guess_chance {
+                            if probability < guess_probability {
+                                best_guess = Some(pos);
+                            }
+                        }
+                        // Always displace guesses with no information
+                        if let MineChance::NoInformation(_) = guess_chance {
+                            best_guess = Some(pos);
+                        }
+                    } else {
+                        best_guess = Some(pos);
+                    }
+                }
+            }
+            // Logic for fields without concrete information
+            if let MineChance::NoInformation(probability) = chance {
+                // Open any fields with 0% chance
+                if probability <= 0.0 && !game.is_open(pos) {
+                    log::info!(
+                        "Solver suggests opening field ({}, {}), guaranteed safe",
+                        pos.0,
+                        pos.1
+                    );
+                    action = SolverStep::Open(pos);
+                    break;
+                }
+
+                // Is this better than the current best guess?
+                // Take lower priority than guesses with information
+                if !game.is_open(pos) && !game.is_flagged(pos) {
+                    if best_guess.is_some() {
+                        let guess_pos = best_guess.unwrap();
+                        let guess_chance = self.get_mine_chance(guess_pos);
+
+                        // Check probability of this guess would be lower than the current best guess
+                        if let MineChance::NoInformation(guess_probability) = guess_chance {
                             if probability < guess_probability {
                                 best_guess = Some(pos);
                             }

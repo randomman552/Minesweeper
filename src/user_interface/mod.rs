@@ -31,6 +31,7 @@ pub enum Message {
     NewGameReleased,
     NewGameOpenMenu,
     NewGameStart(GameDifficulty),
+    RestartGame,
     OpenPressed,
     OpenReleased,
     CustomButtonPressed(String),
@@ -64,6 +65,7 @@ pub struct MinesweeperInterface {
     hovered_button_id: Option<String>,
     pressed_button_id: Option<String>,
     show_mine_chance: bool,
+    difficulty: GameDifficulty,
 }
 
 impl Default for MinesweeperInterface {
@@ -80,6 +82,7 @@ impl Default for MinesweeperInterface {
             hovered_button_id: None,
             pressed_button_id: None,
             show_mine_chance: false,
+            difficulty: GameDifficulty::Easy,
         }
     }
 }
@@ -180,12 +183,20 @@ impl MinesweeperInterface {
                     GameDifficulty::Medium => Minesweeper::new(16, 16, 40),
                     GameDifficulty::Hard => Minesweeper::new(30, 16, 99),
                 };
+                self.difficulty = difficulty;
+                self.timer_enabled = false;
+                self.timer = 0;
                 self.solver = Solver::new();
                 log::info!("Starting new game with difficulty {:?}", difficulty);
 
                 // Return re-size task
                 let size = self.calculate_size();
                 return window::get_latest().and_then(move |id| window::resize(id, size));
+            }
+            Message::RestartGame => {
+                log::info!("Restarting game");
+                let difficulty = self.difficulty;
+                return Task::perform(async {}, move |_| Message::NewGameStart(difficulty));
             }
 
             // Custom button logic
@@ -242,6 +253,8 @@ impl MinesweeperInterface {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
+        let _r_key = Key::Character('r');
+
         Subscription::batch(vec![
             // Timer
             time::every(Duration::from_secs(1)).map(Message::Tick),
@@ -269,6 +282,14 @@ impl MinesweeperInterface {
                         physical_key: _,
                         text: _,
                     } => Message::SolveStep,
+                    keyboard::Event::KeyPressed {
+                        key: _r_key,
+                        location: _,
+                        modified_key: _,
+                        modifiers: _,
+                        physical_key: _,
+                        text: _,
+                    } => Message::RestartGame,
                     _ => Message::Ignore,
                 },
                 _ => Message::Ignore,

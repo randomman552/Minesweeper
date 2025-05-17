@@ -61,6 +61,11 @@ impl Solver {
         let mut action = SolverStep::None;
         let mut best_guess: Option<Position> = None;
 
+        // Make the game opening move, go for the same corner every time
+        if !game.has_started() {
+            return SolverStep::Open((0, 0));
+        }
+
         // Logic for fields with concerete information
         for (pos, chance) in self.field.clone() {
             if let MineChance::WithInformation(probability) = chance {

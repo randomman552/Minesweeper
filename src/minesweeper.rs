@@ -170,6 +170,10 @@ impl Minesweeper {
         return self.flagged.len() - self.mines.len();
     }
 
+    pub fn has_started(&self) -> bool {
+        return self.opened.len() > 0;
+    }
+
     // endregion
 
     // region Neighboring fields methods

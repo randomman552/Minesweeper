@@ -198,6 +198,7 @@ impl Minesweeper {
     pub fn neighboring_closed_fields(&self, pos: Position) -> u8 {
         self.neighboring_fields_iter(pos)
             .filter(|pos| !self.is_open(*pos))
+            .filter(|pos| self.is_in_bounds(*pos))
             .count() as u8
     }
 

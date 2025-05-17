@@ -200,12 +200,16 @@ impl MinesweeperInterface {
 
             // Game solver related
             Message::ShowMineChance => {
-                self.show_mine_chance = true;
-                log::info!("Showing solver mine chance");
+                if !self.show_mine_chance {
+                    self.show_mine_chance = true;
+                    log::info!("Showing solver mine chance");
+                }
             }
             Message::HideMineChance => {
-                self.show_mine_chance = false;
-                log::info!("Hiding solver mine chance");
+                if self.show_mine_chance {
+                    self.show_mine_chance = false;
+                    log::info!("Hiding solver mine chance");
+                }
             }
 
             // Ignore any other messages

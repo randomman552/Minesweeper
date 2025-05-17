@@ -2,11 +2,23 @@ use std::{collections::HashMap, fmt::Display};
 
 use crate::minesweeper::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SolverStep {
-    Open(u16, u16),
-    Flag(u16, u16),
+    Open(Position),
+    Flag(Position),
     None,
+}
+
+impl Display for SolverStep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SolverStep::None => write!(f, "None")?,
+            SolverStep::Flag(pos) => write!(f, "Flag ({}, {})", pos.0, pos.1)?,
+            SolverStep::Open(pos) => write!(f, "Open ({}, {})", pos.0, pos.1)?,
+        };
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -41,11 +53,68 @@ impl Solver {
     pub fn solve_step(&mut self, game: &Minesweeper) -> SolverStep {
         self.calculate_field(game);
 
-        // TODO: Flag any fields with 100% chance that are not already flagged
-        // TODO: Ignore any fields with 100% chance that are flagged
-        // TODO: Open any fields with 0% chance
+        // Default action is to do nothing
+        let mut action = SolverStep::None;
+        let mut best_guess: Option<Position> = None;
 
-        return SolverStep::None;
+        for (pos, chance) in self.field.clone() {
+            if let MineChance::WithInformation(probability) = chance {
+                // Flag any fields with 100% chance that are not already flagged
+                if probability >= 1.0 && !game.is_flagged(pos) {
+                    log::info!(
+                        "Solver suggests flagging field ({}, {}), guaranteed mine",
+                        pos.0,
+                        pos.1
+                    );
+                    action = SolverStep::Flag(pos);
+                    break;
+                }
+
+                // Open any fields with 0% chance
+                if probability <= 0.0 && !game.is_open(pos) {
+                    log::info!(
+                        "Solver suggests opening field ({}, {}), guaranteed safe",
+                        pos.0,
+                        pos.1
+                    );
+                    action = SolverStep::Open(pos);
+                    break;
+                }
+
+                // Is this better than the current best guess?
+                if !game.is_open(pos) && !game.is_flagged(pos) {
+                    if best_guess.is_some() {
+                        let guess_pos = best_guess.unwrap();
+                        let guess_chance = self.get_mine_chance(guess_pos);
+
+                        // Check probability of this guess would be lower than the current best guess
+                        if let MineChance::WithInformation(guess_probability) = guess_chance {
+                            if probability < guess_probability {
+                                best_guess = Some(pos);
+                            }
+                        }
+                    } else {
+                        best_guess = Some(pos);
+                    }
+                }
+            }
+        }
+
+        // We must guess!
+        if best_guess.is_some() && action == SolverStep::None {
+            let pos = best_guess.unwrap();
+            log::info!(
+                "Solver suggests opening field ({}, {}), best safe guess",
+                pos.0,
+                pos.1
+            );
+            action = SolverStep::Open(pos);
+        }
+
+        if action == SolverStep::None {
+            log::info!("Solver suggests no action");
+        }
+        return action;
     }
 
     /// Get the probability (0-1) that the field with the given position is a mine

@@ -11,10 +11,10 @@ use crate::{minesweeper::*, solver::Solver};
 use assets::MinesweeperAssets;
 use iced::{
     mouse::{self, Interaction},
-    padding, time,
-    widget::{container, image, Column, Container, Image, MouseArea, Row, Text},
+    overlay, padding, time,
+    widget::{container, image, tooltip, Column, Container, Image, MouseArea, Row, Text},
     window::{self},
-    Alignment, Element, Length, Size, Subscription, Task, Theme,
+    Alignment, Color, Element, Length, Size, Subscription, Task, Theme,
 };
 use styles::ContainerStyles;
 
@@ -103,6 +103,8 @@ impl MinesweeperInterface {
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
+        self.solver.solve_step(&self.game);
+
         match message {
             // Field open logic
             Message::Open(pos) => {
@@ -406,35 +408,45 @@ impl MinesweeperInterface {
         let field_state = self.game.get_field_state(pos);
 
         // Get the field content
-        let cell_content = match field_state {
-            FieldState::Unknown => image(&self.assets.closed),
-            FieldState::Flagged => image(&self.assets.flag),
-            FieldState::Question => image(&self.assets.question_closed),
-            FieldState::MineRevealed => image(&self.assets.mine),
-            FieldState::NoMine => image(&self.assets.mine_false),
-            FieldState::MineDetonated => image(&self.assets.mine_detonated),
+        let cell_content: Element<Message> = match field_state {
+            FieldState::Unknown => image(&self.assets.closed).into(),
+            FieldState::Flagged => image(&self.assets.flag).into(),
+            FieldState::Question => image(&self.assets.question_closed).into(),
+            FieldState::MineRevealed => image(&self.assets.mine).into(),
+            FieldState::NoMine => image(&self.assets.mine_false).into(),
+            FieldState::MineDetonated => image(&self.assets.mine_detonated).into(),
             FieldState::Open(count) => match count {
-                0 => image(&self.assets.field0),
-                1 => image(&self.assets.field1),
-                2 => image(&self.assets.field2),
-                3 => image(&self.assets.field3),
-                4 => image(&self.assets.field4),
-                5 => image(&self.assets.field5),
-                6 => image(&self.assets.field6),
-                7 => image(&self.assets.field7),
-                8 => image(&self.assets.field8),
+                0 => image(&self.assets.field0).into(),
+                1 => image(&self.assets.field1).into(),
+                2 => image(&self.assets.field2).into(),
+                3 => image(&self.assets.field3).into(),
+                4 => image(&self.assets.field4).into(),
+                5 => image(&self.assets.field5).into(),
+                6 => image(&self.assets.field6).into(),
+                7 => image(&self.assets.field7).into(),
+                8 => image(&self.assets.field8).into(),
                 _ => panic!("Mine count out of range 0 - 8"),
             },
         };
 
-        // Create the field (with interaction logic)
-        MouseArea::new(Container::new(cell_content))
+        // Create field content
+        let field: Element<Message> = MouseArea::new(Container::new(cell_content))
             .on_press(Message::OpenPressed)
             .on_right_press(Message::OpenPressed)
             .on_exit(Message::OpenReleased)
             .on_release(Message::Open(pos))
             .on_right_release(Message::Flag(pos))
             .interaction(mouse::Interaction::Pointer)
-            .into()
+            .into();
+
+        // Add tooltip on solver mine chance
+        let mine_chance = self.solver.get_mine_chance(pos) * 100.0;
+        let mine_chance_string = mine_chance.to_string() + "%";
+        return tooltip(
+            field,
+            Text::new(mine_chance_string).color(Color::BLACK),
+            tooltip::Position::Top,
+        )
+        .into();
     }
 }

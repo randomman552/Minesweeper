@@ -76,7 +76,6 @@ impl Solver {
         }
 
         // TODO: More complicated calculations
-
         return 0.0;
     }
 }

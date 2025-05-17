@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 iced = { version = "0.13.1", features = ["image", "tokio"] }
+log = "0.4.27"
 rand = "0.9.1"
+simple_logger = "5.0.0"

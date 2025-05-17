@@ -18,6 +18,7 @@ use iced::{
     window::{self},
     Alignment, Color, Element, Event, Length, Size, Subscription, Task, Theme,
 };
+use log::info;
 use styles::ContainerStyles;
 
 #[derive(Debug, Clone)]
@@ -119,8 +120,8 @@ impl MinesweeperInterface {
                 self.timer_enabled = true;
                 self.open_pressed = false;
                 if !result.is_none() {
-                    println!(
-                        "Open '({}, {})' with result '{}'",
+                    log::info!(
+                        "Opened '({}, {})' with result '{}'",
                         pos.0,
                         pos.1,
                         result.unwrap()
@@ -139,7 +140,7 @@ impl MinesweeperInterface {
                 self.game.flag(pos);
                 self.timer_enabled = true;
                 self.open_pressed = false;
-                println!("Flag '({}, {})'", pos.0, pos.1);
+                log::info!("Flagged '({}, {})'", pos.0, pos.1);
             }
 
             // New game logic
@@ -154,6 +155,7 @@ impl MinesweeperInterface {
                 self.face_pressed = false;
                 self.timer_enabled = false;
                 self.timer = 0;
+                log::info!("Showing new game menu")
             }
             Message::NewGameStart(difficulty) => {
                 self.show_new_game_menu = false;
@@ -163,7 +165,7 @@ impl MinesweeperInterface {
                     GameDifficulty::Hard => Minesweeper::new(30, 16, 99),
                 };
                 self.solver = Solver::new();
-                println!("Starting new game with difficulty {:?}", difficulty);
+                log::info!("Starting new game with difficulty {:?}", difficulty);
 
                 // Return re-size task
                 let size = self.calculate_size();
@@ -172,9 +174,14 @@ impl MinesweeperInterface {
 
             // Custom button logic
             Message::CustomButtonPressed(id) => {
+                log::debug!("Custom button with id '{}' pressed", id);
                 self.pressed_button_id = Some(id);
             }
             Message::CustomButtonReleased(message_box) => {
+                log::debug!(
+                    "Custom button with id '{:?}' released",
+                    self.pressed_button_id
+                );
                 self.pressed_button_id = None;
                 let message = message_box.deref().to_owned();
 
@@ -186,6 +193,7 @@ impl MinesweeperInterface {
             // Timer logic
             Message::Tick(_) => {
                 if self.timer_enabled && self.game.game_state == GameState::InProgress {
+                    log::trace!("Timer tick");
                     self.timer += 1;
                 }
             }
@@ -193,9 +201,11 @@ impl MinesweeperInterface {
             // Game solver related
             Message::ShowMineChance => {
                 self.show_mine_chance = true;
+                log::info!("Showing solver mine chance");
             }
             Message::HideMineChance => {
                 self.show_mine_chance = false;
+                log::info!("Hiding solver mine chance");
             }
 
             // Ignore any other messages
